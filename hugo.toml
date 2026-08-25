@@ -1,0 +1,30 @@
+baseURL = "https://example.org/"
+languageCode = "pt-br"
+defaultContentLanguage = "pt-br"
+title = "Roberto Franco Moreira"
+enableEmoji = false
+disableKinds = ["taxonomy", "term"]
+
+[params]
+  descricao = "Professor livre-docente na ECA-USP, nas áreas de roteiro e direção. Cineasta."
+
+[menus]
+  [[menus.main]]
+    name = "Cursos"
+    pageRef = "/cursos"
+    weight = 10
+  [[menus.main]]
+    name = "Exercícios"
+    pageRef = "/exercicios"
+    weight = 15
+  [[menus.main]]
+    name = "Projetos"
+    pageRef = "/projetos"
+    weight = 20
+  [[menus.main]]
+    name = "Sobre"
+    pageRef = "/sobre"
+    weight = 30
+
+[markup.goldmark.renderer]
+  unsafe = true

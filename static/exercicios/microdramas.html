@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comparação de roteiros</title>
+<style>
+:root {
+  --bg: #fbfaf8; --fg: #1c1b19; --muted: #6b675f; --accent: #7a2e2e;
+  --rule: #e2ded6; --card: #fff; --shadow: rgba(0,0,0,.06); --win: #2f6b3a;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191817; --fg: #e8e5df; --muted: #a29d93; --accent: #d08770;
+    --rule: #33312d; --card: #211f1d; --shadow: rgba(0,0,0,.4); --win: #7bbf88;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Georgia, serif; line-height: 1.6;
+}
+.wrap { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+h1 { font-size: 1.5rem; margin: 0 0 .3rem; }
+.sub { color: var(--muted); margin-top: 0; }
+label { display: block; font-size: .9rem; color: var(--muted); margin: 1.2rem 0 .3rem; }
+input[type=text], textarea {
+  width: 100%; padding: .55rem .7rem; font: inherit; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--rule); border-radius: 6px;
+}
+textarea { min-height: 4.2rem; resize: vertical; }
+.bar { height: 5px; background: var(--rule); border-radius: 3px; margin: 1.5rem 0 .4rem; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); width: 0; transition: width .25s; }
+.count { font-size: .85rem; color: var(--muted); text-align: right; }
+.crit { text-align: center; font-size: 1.05rem; margin: 1.4rem 0 1rem; }
+.crit b { color: var(--accent); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 34rem) { .pair { grid-template-columns: 1fr; } }
+.card {
+  background: var(--card); border: 2px solid var(--rule); border-radius: 10px;
+  padding: 1rem; box-shadow: 0 1px 3px var(--shadow); display: flex; flex-direction: column; gap: .6rem;
+}
+.card.sel { border-color: var(--win); }
+.card .t { font-weight: 700; }
+.card .clabel { font-size: .82rem; color: var(--muted); margin: 0; }
+.card .ccount { font-size: .72rem; color: var(--muted); text-align: right; margin: 0; }
+.card .ccount.cheio { color: var(--accent); }
+.open {
+  display: inline-block; align-self: flex-start; font-size: .9rem; text-decoration: none;
+  color: var(--accent); border: 1px solid var(--rule); border-radius: 6px; padding: .3rem .7rem;
+}
+.open.disabled { color: var(--muted); pointer-events: none; opacity: .6; }
+.pick {
+  margin-top: .3rem; font: inherit; cursor: pointer; border: 0; border-radius: 6px;
+  padding: .55rem; background: var(--accent); color: #fff;
+}
+.pick.sel { background: var(--win); }
+.nav { display: flex; justify-content: space-between; margin-top: 1.4rem; }
+button.action {
+  font: inherit; background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+  padding: .6rem 1.1rem; cursor: pointer;
+}
+button.action:disabled { opacity: .45; cursor: default; }
+button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--rule); }
+.hidden { display: none; }
+table { border-collapse: collapse; width: 100%; margin-top: 1rem; font-size: .88rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--rule); padding: .35rem .6rem; text-align: left; vertical-align: top; }
+.foot { color: var(--muted); font-size: .8rem; margin-top: 2.5rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="intro">
+    <h1 id="titulo"></h1>
+    <p class="sub" id="tarefaNome"></p>
+    <p id="instrucao"></p>
+    <label for="nome">Seu nome</label>
+    <input type="text" id="nome" placeholder="Nome e sobrenome" autocomplete="name">
+    <button class="action" id="comecar" style="margin-top:1rem">Começar</button>
+  </div>
+
+  <div id="jogo" class="hidden">
+    <div class="bar"><span id="progresso"></span></div>
+    <div class="count" id="contador"></div>
+    <p class="crit" id="criterio"></p>
+    <div class="pair">
+      <div class="card" id="cardEsq">
+        <span class="t"></span>
+        <a class="open" target="_blank" rel="noopener">Abrir roteiro ↗</a>
+        <p class="clabel">Comentário sobre este roteiro (pontos fortes e fracos):</p>
+        <textarea class="cc"></textarea>
+        <p class="ccount"></p>
+        <button class="pick">Este é melhor</button>
+      </div>
+      <div class="card" id="cardDir">
+        <span class="t"></span>
+        <a class="open" target="_blank" rel="noopener">Abrir roteiro ↗</a>
+        <p class="clabel">Comentário sobre este roteiro (pontos fortes e fracos):</p>
+        <textarea class="cc"></textarea>
+        <p class="ccount"></p>
+        <button class="pick">Este é melhor</button>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="action ghost" id="voltar">← Voltar</button>
+      <button class="action" id="proximo">Próximo →</button>
+    </div>
+  </div>
+
+  <div id="fim" class="hidden">
+    <h1>Concluído</h1>
+    <p>Obrigado, <b id="nomeFim"></b>. Suas comparações e comentários foram registrados neste navegador.</p>
+    <p><b>Entregue o resultado ao professor:</b> baixe o arquivo e envie onde for indicado.</p>
+    <button class="action" id="baixar">Baixar respostas (CSV)</button>
+    <button class="action ghost" id="refazer">Refazer</button>
+    <table id="tabela"></table>
+  </div>
+
+  <p class="foot">Comparação par a par — roda inteiramente no seu navegador; nada é enviado a servidor algum.</p>
+</div>
+
+<script>
+/* ================================================================
+   CONFIGURAÇÃO  —  editar por tarefa
+   ================================================================
+   - TAREFA: qual entrega ("Microdrama I", "Microdrama II"…).
+   - CRITERIO: a pergunta de cada dupla.
+   - TRABALHOS: os 6 roteiros. Cada um: { id, titulo, url }.
+     'url' = link do PDF (Google Drive, etc.). Deixe "" enquanto não houver.
+   Os 6 são sorteados em 3 duplas (pareamento, sem repetir roteiro),
+   então cada aluno lê os seis fazendo 3 escolhas. Duplas e lados embaralhados.
+   Cada roteiro recebe um comentário próprio — o retorno de cada grupo é só
+   juntar, do CSV, as linhas do seu roteiro.
+================================================================= */
+
+const TITULO = "Comparação de roteiros — Dramaturgia IV";
+const TAREFA = "Microdrama I";
+const CRITERIO = "Qual dos dois microdramas você considera <b>melhor</b>?";
+const MAX_COMENTARIO = 300;   // limite de caracteres por comentário
+const INSTRUCAO = "Você vai comparar os seis roteiros em três duplas. Em cada dupla, abra os dois, leia, comente cada um e escolha o melhor. Ao final você terá lido todos os seis.";
+
+const TRABALHOS = [
+  { id: "A", titulo: "Roteiro A", url: "" },
+  { id: "B", titulo: "Roteiro B", url: "" },
+  { id: "C", titulo: "Roteiro C", url: "" },
+  { id: "D", titulo: "Roteiro D", url: "" },
+  { id: "E", titulo: "Roteiro E", url: "" },
+  { id: "F", titulo: "Roteiro F", url: "" },
+];
+
+/* ================================================================
+   Motor — normalmente não precisa mexer daqui para baixo
+================================================================= */
+(function () {
+  "use strict";
+  const $ = function (id) { return document.getElementById(id); };
+  const KEY = "comparacao-roteiros-" + TAREFA.replace(/\W+/g, "_");
+  const byId = {}; TRABALHOS.forEach(function (t) { byId[t.id] = t; });
+
+  $("titulo").textContent = TITULO;
+  $("tarefaNome").textContent = TAREFA;
+  $("instrucao").textContent = INSTRUCAO;
+  $("criterio").innerHTML = CRITERIO;
+
+  // Sorteia os trabalhos e os agrupa em duplas (pareamento sem repetição):
+  // com 6 roteiros, saem 3 duplas; embaralhar já randomiza duplas e lados.
+  // Cada dupla guarda a escolha e um comentário por roteiro (ca = sobre 'a', cb = sobre 'b').
+  function montarPares() {
+    const ids = TRABALHOS.map(function (t) { return t.id; });
+    for (let k = ids.length - 1; k > 0; k--) {
+      const r = Math.floor(Math.random() * (k + 1));
+      const tmp = ids[k]; ids[k] = ids[r]; ids[r] = tmp;
+    }
+    const pares = [];
+    for (let n = 0; n + 1 < ids.length; n += 2)
+      pares.push({ a: ids[n], b: ids[n + 1], escolha: null, ca: "", cb: "" });
+    return pares;
+  }
+
+  let pares = [], i = 0, nome = "";
+
+  function contar(card) {
+    const cc = card.querySelector(".cc");
+    const el = card.querySelector(".ccount");
+    el.textContent = cc.value.length + "/" + MAX_COMENTARIO;
+    el.classList.toggle("cheio", cc.value.length >= MAX_COMENTARIO);
+  }
+
+  function pintarCard(card, obra, escolhido, coment) {
+    card.classList.toggle("sel", escolhido);
+    card.querySelector(".t").textContent = obra.titulo;
+    const link = card.querySelector(".open");
+    if (obra.url) { link.href = obra.url; link.classList.remove("disabled"); link.textContent = "Abrir roteiro ↗"; }
+    else { link.removeAttribute("href"); link.classList.add("disabled"); link.textContent = "(link do PDF ainda não definido)"; }
+    const cc = card.querySelector(".cc");
+    cc.maxLength = MAX_COMENTARIO;
+    cc.value = (coment || "").slice(0, MAX_COMENTARIO);
+    contar(card);
+    const btn = card.querySelector(".pick");
+    btn.classList.toggle("sel", escolhido);
+    btn.textContent = escolhido ? "✓ Escolhido como melhor" : "Este é melhor";
+  }
+
+  function mostrar() {
+    const p = pares[i];
+    $("progresso").style.width = (i / pares.length * 100) + "%";
+    $("contador").textContent = "Dupla " + (i + 1) + " de " + pares.length;
+    pintarCard($("cardEsq"), byId[p.a], p.escolha === p.a, p.ca);
+    pintarCard($("cardDir"), byId[p.b], p.escolha === p.b, p.cb);
+    $("proximo").disabled = !p.escolha;
+    $("voltar").style.visibility = i === 0 ? "hidden" : "visible";
+    $("proximo").textContent = (i === pares.length - 1) ? "Concluir ✓" : "Próximo →";
+  }
+
+  function escolher(lado) {
+    const p = pares[i];
+    p.escolha = (lado === "esq") ? p.a : p.b;
+    salvar(); mostrar();
+  }
+
+  function salvar() {
+    try { localStorage.setItem(KEY, JSON.stringify({ nome: nome, pares: pares })); } catch (e) {}
+  }
+
+  function terminar() {
+    salvar();
+    $("jogo").classList.add("hidden");
+    $("fim").classList.remove("hidden");
+    $("nomeFim").textContent = nome || "aluno(a)";
+    let html = "<tr><th>Roteiro</th><th>Resultado</th><th>Seu comentário</th></tr>";
+    pares.forEach(function (p) {
+      [[p.a, p.ca], [p.b, p.cb]].forEach(function (par) {
+        const id = par[0], venceu = (p.escolha === id);
+        html += "<tr><td>" + byId[id].titulo + "</td><td>" +
+          (venceu ? "escolhido" : "não escolhido") + "</td><td>" + (par[1] || "") + "</td></tr>";
+      });
+    });
+    $("tabela").innerHTML = html;
+  }
+
+  function csvSeguro(s) {
+    s = String(s == null ? "" : s);
+    return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function baixar() {
+    const linhas = ["nome;tarefa;dupla;roteiro;venceu;adversario;comentario"];
+    pares.forEach(function (p, k) {
+      linhas.push([nome, TAREFA, k + 1, p.a, (p.escolha === p.a ? "sim" : "nao"), p.b, p.ca].map(csvSeguro).join(";"));
+      linhas.push([nome, TAREFA, k + 1, p.b, (p.escolha === p.b ? "sim" : "nao"), p.a, p.cb].map(csvSeguro).join(";"));
+    });
+    const blob = new Blob(["﻿" + linhas.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const slug = (nome || "aluno").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    a.href = url; a.download = "comparacao-" + TAREFA.replace(/\W+/g, "_") + "-" + slug + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  $("comecar").addEventListener("click", function () {
+    nome = $("nome").value.trim();
+    pares = montarPares(); i = 0;
+    $("intro").classList.add("hidden");
+    $("jogo").classList.remove("hidden");
+    mostrar();
+  });
+  $("cardEsq").querySelector(".pick").addEventListener("click", function () { escolher("esq"); });
+  $("cardDir").querySelector(".pick").addEventListener("click", function () { escolher("dir"); });
+  $("cardEsq").querySelector(".cc").addEventListener("input", function () { pares[i].ca = this.value; contar($("cardEsq")); salvar(); });
+  $("cardDir").querySelector(".cc").addEventListener("input", function () { pares[i].cb = this.value; contar($("cardDir")); salvar(); });
+  $("proximo").addEventListener("click", function () {
+    if (!pares[i].escolha) return;
+    if (i < pares.length - 1) { i++; mostrar(); } else { terminar(); }
+  });
+  $("voltar").addEventListener("click", function () { if (i > 0) { i--; mostrar(); } });
+  $("baixar").addEventListener("click", baixar);
+  $("refazer").addEventListener("click", function () {
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    location.reload();
+  });
+})();
+</script>
+</body>
+</html>

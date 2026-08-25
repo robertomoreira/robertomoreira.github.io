@@ -1,0 +1,11 @@
+{{ define "main" }}
+<article>
+  <h1>{{ .Title }}</h1>
+  {{ if or .Params.codigo .Params.nivel }}
+  <p class="meta">
+    {{ with .Params.codigo }}{{ . }} · {{ end }}{{ with .Params.nivel }}{{ . }}{{ end }}{{ with .Params.creditos }} · {{ . }}{{ end }}
+  </p>
+  {{ end }}
+  {{ .Content }}
+</article>
+{{ end }}

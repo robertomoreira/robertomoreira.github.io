@@ -1,0 +1,25 @@
+{{ define "main" }}
+<section class="hero">
+  <h1>{{ site.Title }}</h1>
+  <p class="lead">{{ site.Params.descricao }}</p>
+</section>
+
+<section>
+  <h2>Cursos</h2>
+  <p>Ementas, programas e materiais das disciplinas de graduação e pós-graduação.</p>
+  <ul class="card-list">
+    {{ range where site.RegularPages "Section" "cursos" }}
+    <li><a href="{{ .RelPermalink }}">{{ .Title }}</a>{{ with .Params.nivel }} <span class="tag">{{ . }}</span>{{ end }}</li>
+    {{ end }}
+  </ul>
+</section>
+
+<section>
+  <h2>Projetos</h2>
+  <ul class="card-list">
+    {{ range where site.RegularPages "Section" "projetos" }}
+    <li><a href="{{ .RelPermalink }}">{{ .Title }}</a> — {{ .Summary | plainify }}</li>
+    {{ end }}
+  </ul>
+</section>
+{{ end }}
