@@ -14,10 +14,6 @@ disableKinds = ["taxonomy", "term"]
     pageRef = "/cursos"
     weight = 10
   [[menus.main]]
-    name = "Exercícios"
-    pageRef = "/exercicios"
-    weight = 15
-  [[menus.main]]
     name = "Projetos"
     pageRef = "/projetos"
     weight = 20

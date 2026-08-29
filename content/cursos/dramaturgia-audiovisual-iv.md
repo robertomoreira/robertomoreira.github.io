@@ -29,4 +29,8 @@ Proporcionar conhecimentos e experiências práticas na elaboração de roteiros
 
 ## Materiais
 
-Os materiais da disciplina serão publicados nesta seção.
+### Exercícios de avaliação por pares
+
+- [Microdrama I — comparação dos roteiros](/dramaturgia-iv/microdrama-1.html)
+
+Os demais materiais da disciplina serão publicados nesta seção.
