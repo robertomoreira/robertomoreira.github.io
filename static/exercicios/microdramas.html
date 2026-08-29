@@ -110,9 +110,9 @@ th, td { border: 1px solid var(--rule); padding: .35rem .6rem; text-align: left;
 
   <div id="fim" class="hidden">
     <h1>Concluído</h1>
-    <p>Obrigado, <b id="nomeFim"></b>. Suas comparações e comentários foram registrados neste navegador.</p>
-    <p><b>Entregue o resultado ao professor:</b> baixe o arquivo e envie onde for indicado.</p>
-    <button class="action" id="baixar">Baixar respostas (CSV)</button>
+    <p>Obrigado, <b id="nomeFim"></b>. Suas comparações e comentários foram registrados.</p>
+    <p id="envioStatus"></p>
+    <button class="action" id="baixar">Baixar uma cópia (CSV)</button>
     <button class="action ghost" id="refazer">Refazer</button>
     <table id="tabela"></table>
   </div>
@@ -138,6 +138,7 @@ const TITULO = "Comparação de roteiros — Dramaturgia IV";
 const TAREFA = "Microdrama I";
 const CRITERIO = "Qual dos dois microdramas você considera <b>melhor</b>?";
 const MAX_COMENTARIO = 300;   // limite de caracteres por comentário
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbwfwEOrm6yQe4Q96jy3ruH4LsQmUMytkgRxhq7_uo5ErAB7aGiZInqITwGTPfDVnsA2/exec";  // Web App do Google Apps Script (conta pessoal)
 const INSTRUCAO = "Você vai comparar os seis roteiros em três duplas. Em cada dupla, abra os dois, leia, comente cada um e escolha o melhor. Ao final você terá lido todos os seis.";
 
 const TRABALHOS = [
@@ -237,6 +238,35 @@ const TRABALHOS = [
       });
     });
     $("tabela").innerHTML = html;
+    enviar();
+  }
+
+  function montarPayload() {
+    const linhas = [];
+    pares.forEach(function (p, k) {
+      linhas.push({ dupla: k + 1, roteiro: p.a, venceu: (p.escolha === p.a ? "sim" : "nao"), adversario: p.b, comentario: p.ca });
+      linhas.push({ dupla: k + 1, roteiro: p.b, venceu: (p.escolha === p.b ? "sim" : "nao"), adversario: p.a, comentario: p.cb });
+    });
+    return { nome: nome, tarefa: TAREFA, linhas: linhas };
+  }
+
+  function enviar() {
+    const st = $("envioStatus");
+    if (!ENDPOINT) { st.textContent = "Baixe a cópia abaixo e envie ao professor."; return; }
+    st.textContent = "Enviando ao professor…";
+    try {
+      fetch(ENDPOINT, {
+        method: "POST", mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(montarPayload())
+      }).then(function () {
+        st.textContent = "✓ Respostas enviadas ao professor. (Guarde uma cópia abaixo, por segurança.)";
+      }).catch(function () {
+        st.textContent = "Não foi possível enviar sozinho — baixe a cópia abaixo e envie ao professor.";
+      });
+    } catch (e) {
+      st.textContent = "Não foi possível enviar sozinho — baixe a cópia abaixo e envie ao professor.";
+    }
   }
 
   function csvSeguro(s) {
