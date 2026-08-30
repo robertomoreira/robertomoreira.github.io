@@ -1,10 +1,7 @@
 ---
-title: "Dramaturgia Audiovisual IV"
-summary: "Roteirização para mídias sociais e plataformas digitais, com oficina de escrita, teoria da narrativa e uso crítico de IA."
-codigo: "CTR0703"
-nivel: "Graduação"
-creditos: "4 créditos aula + 2 trabalho · 120 h"
-weight: 20
+title: "Ementa"
+summary: "Ementa, objetivos e conteúdo programático."
+weight: 10
 ---
 
 ## Ementa
@@ -27,10 +24,6 @@ Proporcionar conhecimentos e experiências práticas na elaboração de roteiros
 8. Escaleta I: a organização do enredo
 9. Escaleta II: o envolvimento emocional do espectador
 
-## Materiais
+## Avaliação
 
-### Exercícios de avaliação por pares
-
-- [Microdrama I — comparação dos roteiros](/dramaturgia-iv/microdrama-1.html)
-
-Os demais materiais da disciplina serão publicados nesta seção.
+Entrega de projeto para filme de curta-metragem, série para internet ou conteúdo para redes sociais, acompanhado do roteiro final (até 5 páginas).
