@@ -1,6 +1,6 @@
 ---
 title: "Aulas"
-summary: "Calendário, materiais de cada aula e depósito dos roteiros."
+summary: "Programa do semestre: datas, materiais de cada aula e depósito dos roteiros."
 weight: 40
 ---
 
