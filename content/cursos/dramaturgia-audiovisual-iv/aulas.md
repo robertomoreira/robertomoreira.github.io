@@ -24,11 +24,11 @@ Segundo semestre de 2026 · quintas-feiras.
 | 15/10 | Estruturas narrativas (Anna Muylaert); entrega do Microdrama II | [Depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
 | 22/10 | Discussão do Microdrama II (Renato Candido); tarefa Microdrama III | |
 | 29/10 | Entrega do Microdrama III (CILECT) | [Depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
-| 05/11 | Discussão do Microdrama III (Elena Altheman); tarefa Microdrama de 5 ep. I | |
-| 12/11 | O personagem e o pitching (projeto "É Nóis na Fita", Eliana Fonseca) | |
-| 19/11 | Discussão dos Microdramas de 5 ep. I (Rodrigo Thomé); tarefa 5 ep. II | [Depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
-| 26/11 | Situação dramática, emoção e autoria coletiva | |
-| 03/12 | Discussão dos Microdramas de 5 ep. II (Rodrigo Thomé; Vitor Brandt e Denis Nielsen) | [Depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
+| 05/11 | Discussão do Microdrama III (Elena Altheman); tarefa Microdrama IV | |
+| 12/11 | O personagem e o pitching (projeto "É Nóis na Fita", Eliana Fonseca); entrega do Microdrama IV | [Depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
+| 19/11 | Discussão dos Microdramas com 3 episódios I (Rodrigo Ferreira Thomé); tarefa Microdrama V | |
+| 26/11 | Situação dramática, emoção e autoria coletiva; entrega do Microdrama V | [Depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
+| 03/12 | Discussão dos Microdramas com 3 episódios II (Vitor Brandt e Denis Nielsen) | |
 | 17/12 | Encerramento do semestre | |
 
 Os exercícios de comparação das demais tarefas serão publicados conforme o curso avança.
