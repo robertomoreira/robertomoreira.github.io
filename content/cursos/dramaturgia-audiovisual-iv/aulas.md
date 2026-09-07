@@ -10,6 +10,10 @@ Deposite o **PDF** do seu roteiro na pasta da sua tarefa, dentro desta pasta do 
 
 **[→ Pasta de entrega dos roteiros (Google Drive)](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link)**
 
+## Sorteio de grupos
+
+**[→ Sortear os grupos de uma tarefa](/dramaturgia-iv/sorteio.html)** — cole a lista da turma, dê o nome da tarefa e clique em Sortear. A lista fica só no seu navegador.
+
 ## Calendário das aulas
 
 Segundo semestre de 2026 · quintas-feiras.
