@@ -92,3 +92,5 @@ blockquote { border-left: 3px solid var(--rule); margin-left: 0; padding-left: 1
   color: var(--muted);
   font-size: 0.9rem;
 }
+td:first-child { white-space: nowrap; }
+td:nth-child(3) { min-width: 16rem; }
