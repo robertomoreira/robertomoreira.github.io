@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Sorteio de grupos</title>
+<style>
+:root {
+  --bg: #fbfaf8; --fg: #1c1b19; --muted: #6b675f; --accent: #7a2e2e;
+  --rule: #e2ded6; --card: #fff; --shadow: rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191817; --fg: #e8e5df; --muted: #a29d93; --accent: #d08770;
+    --rule: #33312d; --card: #211f1d; --shadow: rgba(0,0,0,.4);
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Georgia, serif; line-height: 1.6;
+}
+.wrap { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+h1 { font-size: 1.5rem; margin: 0 0 .3rem; }
+h2 { font-size: 1.15rem; margin: 2rem 0 .6rem; }
+.sub { color: var(--muted); margin-top: 0; }
+label { display: block; font-size: .9rem; color: var(--muted); margin: 1.2rem 0 .3rem; }
+input[type=text], input[type=number], textarea {
+  width: 100%; padding: .55rem .7rem; font: inherit; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--rule); border-radius: 6px;
+}
+textarea { min-height: 12rem; resize: vertical; font-size: .92rem; }
+.row { display: grid; grid-template-columns: 1fr 8rem; gap: 1rem; }
+@media (max-width: 34rem) { .row { grid-template-columns: 1fr; } }
+.hint { font-size: .82rem; color: var(--muted); margin: .3rem 0 0; }
+.actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.4rem; align-items: center; }
+button.action {
+  font: inherit; background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+  padding: .6rem 1.1rem; cursor: pointer;
+}
+button.action:disabled { opacity: .45; cursor: default; }
+button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--rule); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 34rem) { .grid { grid-template-columns: 1fr; } }
+.card {
+  background: var(--card); border: 2px solid var(--rule); border-radius: 10px;
+  padding: 1rem; box-shadow: 0 1px 3px var(--shadow);
+}
+.card .t { font-weight: 700; margin: 0 0 .4rem; }
+.card ul { margin: 0 0 .7rem; padding-left: 1.2rem; }
+.card li { margin: .1rem 0; }
+.card a.mail {
+  display: inline-block; font-size: .9rem; text-decoration: none; color: var(--accent);
+  border: 1px solid var(--rule); border-radius: 6px; padding: .3rem .7rem;
+}
+.status { font-size: .9rem; color: var(--muted); margin: .6rem 0 0; }
+.hidden { display: none; }
+.foot { color: var(--muted); font-size: .8rem; margin-top: 2.5rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Sorteio de grupos</h1>
+  <p class="sub">Dramaturgia Audiovisual IV</p>
+
+  <label for="alunos">Alunos (um por linha, <code>Nome &lt;email&gt;</code> ou só o nome; linhas começadas com <code>#</code> são ignoradas)</label>
+  <textarea id="alunos" placeholder="Alice Sanna de Cabado &lt;alice.sanna@usp.br&gt;
+Arthur Silva Santos &lt;arthur.silvas@usp.br&gt;
+…"></textarea>
+  <p class="hint">A lista fica guardada só neste navegador. Nada é enviado nem publicado.</p>
+
+  <div class="row">
+    <div>
+      <label for="tarefa">Tarefa</label>
+      <input type="text" id="tarefa" placeholder="Microdrama II">
+      <p class="hint">O nome da tarefa define o sorteio: a mesma tarefa devolve sempre os mesmos grupos.</p>
+    </div>
+    <div>
+      <label for="tamanho">Alunos por grupo</label>
+      <input type="number" id="tamanho" value="4" min="2" max="10">
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="action" id="sortear">Sortear</button>
+    <button class="action ghost" id="outro" disabled>Outro sorteio</button>
+    <button class="action ghost" id="copiar" disabled>Copiar lista</button>
+    <span class="status" id="status"></span>
+  </div>
+
+  <div id="resultado" class="hidden">
+    <h2 id="cabecalho"></h2>
+    <div class="grid" id="grupos"></div>
+  </div>
+
+  <p class="foot">Grupos do tamanho pedido; se sobrar um aluno sozinho, ele é distribuído nos primeiros grupos. "Outro sorteio" gera um arranjo alternativo para a mesma tarefa (variante 2, 3…). A última tarefa é montada pelos próprios alunos.</p>
+
+</div>
+
+<script>
+(function () {
+  var KEY = 'dramaturgia-iv-sorteio';
+  var $ = function (id) { return document.getElementById(id); };
+  var variante = 1, grupos = [], tarefaAtual = '';
+
+  // --- persistência local (só neste navegador) ---
+  try {
+    var salvo = JSON.parse(localStorage.getItem(KEY) || '{}');
+    if (salvo.alunos) $('alunos').value = salvo.alunos;
+    if (salvo.tarefa) $('tarefa').value = salvo.tarefa;
+    if (salvo.tamanho) $('tamanho').value = salvo.tamanho;
+  } catch (e) {}
+  function guardar() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        alunos: $('alunos').value, tarefa: $('tarefa').value, tamanho: $('tamanho').value
+      }));
+    } catch (e) {}
+  }
+  ['alunos', 'tarefa', 'tamanho'].forEach(function (id) { $(id).addEventListener('input', guardar); });
+
+  // --- gerador determinístico (cyrb128 + sfc32) ---
+  function cyrb128(str) {
+    var h1 = 1779033703, h2 = 3144134277, h3 = 1013904242, h4 = 2773480762;
+    for (var i = 0, k; i < str.length; i++) {
+      k = str.charCodeAt(i);
+      h1 = h2 ^ Math.imul(h1 ^ k, 597399067);
+      h2 = h3 ^ Math.imul(h2 ^ k, 2869860233);
+      h3 = h4 ^ Math.imul(h3 ^ k, 951274213);
+      h4 = h1 ^ Math.imul(h4 ^ k, 2716044179);
+    }
+    h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067);
+    h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233);
+    h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213);
+    h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179);
+    return [(h1 ^ h2 ^ h3 ^ h4) >>> 0, (h2 ^ h1) >>> 0, (h3 ^ h1) >>> 0, (h4 ^ h1) >>> 0];
+  }
+  function sfc32(a, b, c, d) {
+    return function () {
+      a >>>= 0; b >>>= 0; c >>>= 0; d >>>= 0;
+      var t = (a + b) | 0;
+      a = b ^ (b >>> 9); b = (c + (c << 3)) | 0; c = (c << 21) | (c >>> 11);
+      d = (d + 1) | 0; t = (t + d) | 0; c = (c + t) | 0;
+      return (t >>> 0) / 4294967296;
+    };
+  }
+
+  function lerAlunos() {
+    return $('alunos').value.split(/\r?\n/).map(function (l) { return l.trim(); })
+      .filter(function (l) { return l && l[0] !== '#'; })
+      .map(function (l) {
+        var m = l.match(/^(.*?)\s*<([^>]+)>\s*$/);
+        return m ? { nome: m[1].trim(), email: m[2].trim() } : { nome: l, email: '' };
+      });
+  }
+
+  function montar(alunos, tamanho, rng) {
+    var b = alunos.slice();
+    for (var i = b.length - 1; i > 0; i--) {
+      var j = Math.floor(rng() * (i + 1)); var t = b[i]; b[i] = b[j]; b[j] = t;
+    }
+    var gs = [];
+    for (var k = 0; k < b.length; k += tamanho) gs.push(b.slice(k, k + tamanho));
+    if (gs.length > 1 && gs[gs.length - 1].length === 1) {
+      var sobra = gs.pop();
+      sobra.forEach(function (a, n) { gs[n % gs.length].push(a); });
+    }
+    return gs;
+  }
+
+  function sortear() {
+    var alunos = lerAlunos();
+    var tamanho = parseInt($('tamanho').value, 10) || 4;
+    tarefaAtual = $('tarefa').value.trim();
+    if (!tarefaAtual) { $('status').textContent = 'Dê um nome à tarefa.'; $('tarefa').focus(); return; }
+    if (alunos.length < tamanho) { $('status').textContent = 'Poucos alunos (' + alunos.length + ') para grupos de ' + tamanho + '.'; return; }
+    var semente = tarefaAtual + (variante > 1 ? ' #' + variante : '');
+    var s = cyrb128(semente);
+    grupos = montar(alunos, tamanho, sfc32(s[0], s[1], s[2], s[3]));
+    render(alunos.length);
+    $('status').textContent = variante > 1 ? 'Variante ' + variante + '.' : '';
+    $('outro').disabled = false; $('copiar').disabled = false;
+    guardar();
+  }
+
+  function render(total) {
+    $('cabecalho').textContent = tarefaAtual + ' — ' + total + ' alunos em ' + grupos.length + ' grupos';
+    var box = $('grupos'); box.innerHTML = '';
+    grupos.forEach(function (g, n) {
+      var card = document.createElement('div'); card.className = 'card';
+      var t = document.createElement('p'); t.className = 't'; t.textContent = 'Grupo ' + (n + 1) + ' (' + g.length + ')';
+      card.appendChild(t);
+      var ul = document.createElement('ul');
+      g.forEach(function (a) { var li = document.createElement('li'); li.textContent = a.nome; ul.appendChild(li); });
+      card.appendChild(ul);
+      var emails = g.map(function (a) { return a.email; }).filter(Boolean);
+      if (emails.length) {
+        var a = document.createElement('a'); a.className = 'mail';
+        a.href = 'mailto:' + emails.join(',') + '?subject=' + encodeURIComponent('Dramaturgia IV — ' + tarefaAtual + ' — Grupo ' + (n + 1));
+        a.textContent = 'E-mail ao grupo'; card.appendChild(a);
+      }
+      box.appendChild(card);
+    });
+    $('resultado').classList.remove('hidden');
+  }
+
+  function texto() {
+    var out = '# Grupos — ' + tarefaAtual + (variante > 1 ? ' (variante ' + variante + ')' : '') + '\n\n';
+    grupos.forEach(function (g, n) {
+      out += '## Grupo ' + (n + 1) + '\n\n';
+      g.forEach(function (a) { out += '- ' + a.nome + (a.email ? ' <' + a.email + '>' : '') + '\n'; });
+      out += '\n';
+    });
+    return out;
+  }
+
+  $('sortear').addEventListener('click', function () { variante = 1; sortear(); });
+  $('outro').addEventListener('click', function () { variante += 1; sortear(); });
+  $('copiar').addEventListener('click', function () {
+    var t = texto();
+    var done = function () { $('status').textContent = 'Lista copiada.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { fallback(t); done(); });
+    else { fallback(t); done(); }
+  });
+  function fallback(t) {
+    var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta);
+    ta.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(ta);
+  }
+  $('tarefa').addEventListener('keydown', function (e) { if (e.key === 'Enter') { variante = 1; sortear(); } });
+})();
+</script>
+</body>
+</html>
