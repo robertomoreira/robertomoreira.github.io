@@ -23,10 +23,10 @@ body {
 }
 .wrap { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
 h1 { font-size: 1.5rem; margin: 0 0 .3rem; }
-h2 { font-size: 1.15rem; margin: 2rem 0 .6rem; }
+h2 { font-size: 1.15rem; margin: 2.2rem 0 .6rem; }
 .sub { color: var(--muted); margin-top: 0; }
 label { display: block; font-size: .9rem; color: var(--muted); margin: 1.2rem 0 .3rem; }
-input[type=text], input[type=number], textarea {
+input[type=text], input[type=number], input[type=password], textarea {
   width: 100%; padding: .55rem .7rem; font: inherit; color: var(--fg);
   background: var(--bg); border: 1px solid var(--rule); border-radius: 6px;
 }
@@ -41,6 +41,7 @@ button.action {
 }
 button.action:disabled { opacity: .45; cursor: default; }
 button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--rule); }
+button.small { padding: .3rem .7rem; font-size: .85rem; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 @media (max-width: 34rem) { .grid { grid-template-columns: 1fr; } }
 .card {
@@ -55,6 +56,13 @@ button.ghost { background: transparent; color: var(--accent); border: 1px solid 
   border: 1px solid var(--rule); border-radius: 6px; padding: .3rem .7rem;
 }
 .status { font-size: .9rem; color: var(--muted); margin: .6rem 0 0; }
+.senha { border: 1px solid var(--rule); border-radius: 10px; padding: 1rem 1.2rem; margin-top: 1.5rem; background: var(--card); }
+.senha label { margin-top: 0; }
+.lista { list-style: none; padding: 0; margin: 0; }
+.lista li { padding: .45rem 0; border-bottom: 1px solid var(--rule); display: flex; gap: .8rem; align-items: baseline; flex-wrap: wrap; }
+.lista a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.lista .quando { color: var(--muted); font-size: .85rem; }
+.lista .local { font-size: .75rem; color: var(--muted); border: 1px solid var(--rule); border-radius: 3px; padding: 0 .4rem; }
 .hidden { display: none; }
 .foot { color: var(--muted); font-size: .8rem; margin-top: 2.5rem; }
 </style>
@@ -65,61 +73,126 @@ button.ghost { background: transparent; color: var(--accent); border: 1px solid 
   <h1>Sorteio de grupos</h1>
   <p class="sub">Dramaturgia Audiovisual IV</p>
 
-  <label for="alunos">Alunos (um por linha, <code>Nome &lt;email&gt;</code> ou só o nome; linhas começadas com <code>#</code> são ignoradas)</label>
-  <textarea id="alunos" placeholder="Alice Sanna de Cabado &lt;alice.sanna@usp.br&gt;
-Arthur Silva Santos &lt;arthur.silvas@usp.br&gt;
-…"></textarea>
-  <p class="hint">A lista fica guardada só neste navegador. Nada é enviado nem publicado.</p>
-
-  <div class="row">
-    <div>
-      <label for="tarefa">Tarefa</label>
-      <input type="text" id="tarefa" placeholder="Microdrama II">
-      <p class="hint">O nome da tarefa define o sorteio: a mesma tarefa devolve sempre os mesmos grupos.</p>
+  <div class="senha" id="bloqueio">
+    <label for="senha">Senha da turma</label>
+    <input type="password" id="senha" autocomplete="current-password" placeholder="Digite uma vez; fica guardada neste navegador">
+    <div class="actions" style="margin-top:.8rem">
+      <button class="action" id="abrir">Abrir</button>
+      <span class="status" id="senhaStatus"></span>
     </div>
-    <div>
-      <label for="tamanho">Alunos por grupo</label>
-      <input type="number" id="tamanho" value="4" min="2" max="10">
+    <p class="hint">A lista da turma e os sorteios feitos estão cifrados no site. A senha só é usada aqui, no navegador.</p>
+  </div>
+
+  <div id="app" class="hidden">
+
+    <label for="alunos">Alunos (um por linha, <code>Nome &lt;email&gt;</code> ou só o nome; linhas começadas com <code>#</code> são ignoradas)</label>
+    <textarea id="alunos"></textarea>
+    <p class="hint">Preenchido com a lista oficial da turma. Pode editar; <a href="#" id="recarregar">recarregar a lista oficial</a> desfaz as edições.</p>
+
+    <div class="row">
+      <div>
+        <label for="tarefa">Tarefa</label>
+        <input type="text" id="tarefa" placeholder="Microdrama II">
+        <p class="hint">O nome da tarefa define o sorteio: a mesma tarefa devolve sempre os mesmos grupos.</p>
+      </div>
+      <div>
+        <label for="tamanho">Alunos por grupo</label>
+        <input type="number" id="tamanho" value="4" min="2" max="10">
+      </div>
     </div>
-  </div>
 
-  <div class="actions">
-    <button class="action" id="sortear">Sortear</button>
-    <button class="action ghost" id="outro" disabled>Outro sorteio</button>
-    <button class="action ghost" id="copiar" disabled>Copiar lista</button>
-    <span class="status" id="status"></span>
-  </div>
+    <div class="actions">
+      <button class="action" id="sortear">Sortear</button>
+      <button class="action ghost" id="outro" disabled>Outro sorteio</button>
+      <button class="action ghost" id="copiar" disabled>Copiar lista</button>
+      <button class="action ghost" id="guardar" disabled>Guardar este sorteio</button>
+      <span class="status" id="status"></span>
+    </div>
 
-  <div id="resultado" class="hidden">
-    <h2 id="cabecalho"></h2>
-    <div class="grid" id="grupos"></div>
-  </div>
+    <div id="resultado" class="hidden">
+      <h2 id="cabecalho"></h2>
+      <div class="grid" id="grupos"></div>
+    </div>
 
-  <p class="foot">Grupos do tamanho pedido; se sobrar um aluno sozinho, ele é distribuído nos primeiros grupos. "Outro sorteio" gera um arranjo alternativo para a mesma tarefa (variante 2, 3…). A última tarefa é montada pelos próprios alunos.</p>
+    <h2>Sorteios feitos</h2>
+    <ul class="lista" id="feitos"></ul>
+    <p class="hint">Os sorteios com data vêm do registro do curso; os marcados "neste navegador" foram guardados aqui e só existem nesta máquina.</p>
+
+    <div id="vistaSorteio" class="hidden">
+      <h2 id="vistaTitulo"></h2>
+      <p class="sub" id="vistaSub"></p>
+      <div class="grid" id="vistaGrupos"></div>
+    </div>
+
+    <p class="foot">Grupos do tamanho pedido; se sobrar um aluno sozinho, ele é distribuído nos primeiros grupos. "Outro sorteio" gera um arranjo alternativo para a mesma tarefa (variante 2, 3…). A última tarefa é montada pelos próprios alunos. Para registrar um sorteio no curso (fora deste navegador), copie a lista e guarde na vault.</p>
+
+  </div>
 
 </div>
 
 <script>
 (function () {
   var KEY = 'dramaturgia-iv-sorteio';
+  var KEY_SENHA = 'dramaturgia-iv-senha';
+  var KEY_LOCAIS = 'dramaturgia-iv-sorteios-locais';
   var $ = function (id) { return document.getElementById(id); };
-  var variante = 1, grupos = [], tarefaAtual = '';
+  var variante = 1, grupos = [], tarefaAtual = '', oficial = { alunos: [], sorteios: [] }, locais = [];
 
-  // --- persistência local (só neste navegador) ---
-  try {
-    var salvo = JSON.parse(localStorage.getItem(KEY) || '{}');
-    if (salvo.alunos) $('alunos').value = salvo.alunos;
+  // --- utilidades ---
+  function ler(k, padrao) { try { return JSON.parse(localStorage.getItem(k)) || padrao; } catch (e) { return padrao; } }
+  function gravar(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function slug(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+  function linha(a) { return a.nome + (a.email ? ' <' + a.email + '>' : ''); }
+  function b64(s) { var bin = atob(s), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+
+  // --- abertura dos dados cifrados ---
+  var pacote = null;
+  fetch('sorteio-dados.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (p) {
+    pacote = p;
+    var s = ler(KEY_SENHA, '');
+    if (s) abrir(s, true); else $('senha').focus();
+  }).catch(function () { $('senhaStatus').textContent = 'Não foi possível carregar os dados do site.'; });
+
+  function abrir(senha, silencioso) {
+    if (!pacote) { $('senhaStatus').textContent = 'Aguarde, carregando…'; return; }
+    var enc = new TextEncoder();
+    crypto.subtle.importKey('raw', enc.encode(senha), 'PBKDF2', false, ['deriveKey']).then(function (base) {
+      return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(pacote.salt), iterations: pacote.iter, hash: 'SHA-256' }, base,
+        { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    }).then(function (key) {
+      return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(pacote.iv) }, key, b64(pacote.dados));
+    }).then(function (buf) {
+      oficial = JSON.parse(new TextDecoder().decode(buf));
+      gravar(KEY_SENHA, senha);
+      iniciar();
+    }).catch(function () {
+      if (!silencioso) $('senhaStatus').textContent = 'Senha incorreta.';
+      $('senha').focus();
+    });
+  }
+  $('abrir').addEventListener('click', function () { abrir($('senha').value, false); });
+  $('senha').addEventListener('keydown', function (e) { if (e.key === 'Enter') abrir($('senha').value, false); });
+
+  // --- app ---
+  function iniciar() {
+    $('bloqueio').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    var salvo = ler(KEY, {});
+    $('alunos').value = salvo.alunos || oficial.alunos.map(linha).join('\n');
     if (salvo.tarefa) $('tarefa').value = salvo.tarefa;
     if (salvo.tamanho) $('tamanho').value = salvo.tamanho;
-  } catch (e) {}
-  function guardar() {
-    try {
-      localStorage.setItem(KEY, JSON.stringify({
-        alunos: $('alunos').value, tarefa: $('tarefa').value, tamanho: $('tamanho').value
-      }));
-    } catch (e) {}
+    locais = ler(KEY_LOCAIS, []);
+    listarFeitos();
+    if (location.hash) mostrarPorHash();
   }
-  ['alunos', 'tarefa', 'tamanho'].forEach(function (id) { $(id).addEventListener('input', guardar); });
+  function guardarEstado() {
+    gravar(KEY, { alunos: $('alunos').value, tarefa: $('tarefa').value, tamanho: $('tamanho').value });
+  }
+  ['alunos', 'tarefa', 'tamanho'].forEach(function (id) { $(id).addEventListener('input', guardarEstado); });
+  $('recarregar').addEventListener('click', function (e) {
+    e.preventDefault(); $('alunos').value = oficial.alunos.map(linha).join('\n'); guardarEstado();
+    $('status').textContent = 'Lista oficial recarregada.';
+  });
 
   // --- gerador determinístico (cyrb128 + sfc32) ---
   function cyrb128(str) {
@@ -179,16 +252,18 @@ Arthur Silva Santos &lt;arthur.silvas@usp.br&gt;
     var semente = tarefaAtual + (variante > 1 ? ' #' + variante : '');
     var s = cyrb128(semente);
     grupos = montar(alunos, tamanho, sfc32(s[0], s[1], s[2], s[3]));
-    render(alunos.length);
+    $('cabecalho').textContent = tarefaAtual + ' — ' + alunos.length + ' alunos em ' + grupos.length + ' grupos';
+    renderGrupos($('grupos'), grupos, tarefaAtual);
+    $('resultado').classList.remove('hidden');
+    $('vistaSorteio').classList.add('hidden');
     $('status').textContent = variante > 1 ? 'Variante ' + variante + '.' : '';
-    $('outro').disabled = false; $('copiar').disabled = false;
-    guardar();
+    $('outro').disabled = false; $('copiar').disabled = false; $('guardar').disabled = false;
+    guardarEstado();
   }
 
-  function render(total) {
-    $('cabecalho').textContent = tarefaAtual + ' — ' + total + ' alunos em ' + grupos.length + ' grupos';
-    var box = $('grupos'); box.innerHTML = '';
-    grupos.forEach(function (g, n) {
+  function renderGrupos(box, gs, tarefa) {
+    box.innerHTML = '';
+    gs.forEach(function (g, n) {
       var card = document.createElement('div'); card.className = 'card';
       var t = document.createElement('p'); t.className = 't'; t.textContent = 'Grupo ' + (n + 1) + ' (' + g.length + ')';
       card.appendChild(t);
@@ -198,37 +273,86 @@ Arthur Silva Santos &lt;arthur.silvas@usp.br&gt;
       var emails = g.map(function (a) { return a.email; }).filter(Boolean);
       if (emails.length) {
         var a = document.createElement('a'); a.className = 'mail';
-        a.href = 'mailto:' + emails.join(',') + '?subject=' + encodeURIComponent('Dramaturgia IV — ' + tarefaAtual + ' — Grupo ' + (n + 1));
+        a.href = 'mailto:' + emails.join(',') + '?subject=' + encodeURIComponent('Dramaturgia IV — ' + tarefa + ' — Grupo ' + (n + 1));
         a.textContent = 'E-mail ao grupo'; card.appendChild(a);
       }
       box.appendChild(card);
     });
-    $('resultado').classList.remove('hidden');
   }
 
-  function texto() {
-    var out = '# Grupos — ' + tarefaAtual + (variante > 1 ? ' (variante ' + variante + ')' : '') + '\n\n';
-    grupos.forEach(function (g, n) {
+  function texto(tarefa, gs, nota) {
+    var out = '# Grupos — ' + tarefa + (nota ? ' (' + nota + ')' : '') + '\n\n';
+    gs.forEach(function (g, n) {
       out += '## Grupo ' + (n + 1) + '\n\n';
-      g.forEach(function (a) { out += '- ' + a.nome + (a.email ? ' <' + a.email + '>' : '') + '\n'; });
+      g.forEach(function (a) { out += '- ' + linha(a) + '\n'; });
       out += '\n';
     });
     return out;
   }
 
+  // --- sorteios feitos ---
+  function todosFeitos() {
+    var lista = oficial.sorteios.map(function (s) {
+      return { id: slug(s.tarefa), tarefa: s.tarefa, quando: s.data, local: false,
+        grupos: s.grupos.map(function (g) { return g.map(function (i) { return oficial.alunos[i]; }); }) };
+    });
+    locais.forEach(function (s) { lista.push({ id: 'local-' + slug(s.tarefa) + '-' + s.quando, tarefa: s.tarefa, quando: s.quando, local: true, grupos: s.grupos }); });
+    return lista;
+  }
+  function listarFeitos() {
+    var ul = $('feitos'); ul.innerHTML = '';
+    var lista = todosFeitos();
+    if (!lista.length) { var li = document.createElement('li'); li.textContent = 'Nenhum sorteio registrado.'; ul.appendChild(li); return; }
+    lista.forEach(function (s) {
+      var li = document.createElement('li');
+      var a = document.createElement('a'); a.href = '#' + s.id; a.textContent = s.tarefa; li.appendChild(a);
+      var q = document.createElement('span'); q.className = 'quando'; q.textContent = s.quando + ' · ' + s.grupos.length + ' grupos'; li.appendChild(q);
+      if (s.local) {
+        var tag = document.createElement('span'); tag.className = 'local'; tag.textContent = 'neste navegador'; li.appendChild(tag);
+        var del = document.createElement('button'); del.className = 'action ghost small'; del.textContent = 'apagar';
+        del.addEventListener('click', function () {
+          locais = locais.filter(function (x) { return !(x.tarefa === s.tarefa && x.quando === s.quando); });
+          gravar(KEY_LOCAIS, locais); listarFeitos(); $('vistaSorteio').classList.add('hidden');
+        });
+        li.appendChild(del);
+      }
+      ul.appendChild(li);
+    });
+  }
+  function mostrarPorHash() {
+    var id = location.hash.slice(1);
+    var s = todosFeitos().filter(function (x) { return x.id === id; })[0];
+    if (!s) return;
+    $('vistaTitulo').textContent = s.tarefa;
+    $('vistaSub').textContent = (s.local ? 'Guardado neste navegador em ' : 'Sorteado em ') + s.quando + ' · ' + s.grupos.reduce(function (n, g) { return n + g.length; }, 0) + ' alunos em ' + s.grupos.length + ' grupos';
+    renderGrupos($('vistaGrupos'), s.grupos, s.tarefa);
+    $('vistaSorteio').classList.remove('hidden');
+    $('resultado').classList.add('hidden');
+    $('vistaSorteio').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  window.addEventListener('hashchange', mostrarPorHash);
+
+  // --- botões ---
   $('sortear').addEventListener('click', function () { variante = 1; sortear(); });
   $('outro').addEventListener('click', function () { variante += 1; sortear(); });
+  $('tarefa').addEventListener('keydown', function (e) { if (e.key === 'Enter') { variante = 1; sortear(); } });
   $('copiar').addEventListener('click', function () {
-    var t = texto();
+    var t = texto(tarefaAtual, grupos, variante > 1 ? 'variante ' + variante : '');
     var done = function () { $('status').textContent = 'Lista copiada.'; };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { fallback(t); done(); });
     else { fallback(t); done(); }
+  });
+  $('guardar').addEventListener('click', function () {
+    var hoje = new Date().toISOString().slice(0, 10);
+    locais = locais.filter(function (x) { return !(x.tarefa === tarefaAtual && x.quando === hoje); });
+    locais.push({ tarefa: tarefaAtual, quando: hoje, grupos: grupos });
+    gravar(KEY_LOCAIS, locais); listarFeitos();
+    $('status').textContent = 'Sorteio guardado neste navegador.';
   });
   function fallback(t) {
     var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta);
     ta.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(ta);
   }
-  $('tarefa').addEventListener('keydown', function (e) { if (e.key === 'Enter') { variante = 1; sortear(); } });
 })();
 </script>
 </body>
