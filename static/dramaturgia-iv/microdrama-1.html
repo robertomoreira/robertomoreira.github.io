@@ -77,6 +77,11 @@ th, td { border: 1px solid var(--rule); padding: .35rem .6rem; text-align: left;
     <p id="instrucao"></p>
     <label for="nome">Seu nome</label>
     <input type="text" id="nome" placeholder="Nome e sobrenome" autocomplete="name">
+    <div id="caixaGrupo" class="hidden">
+      <label for="grupo">Seu grupo (1 a 6)</label>
+      <input type="text" id="grupo" inputmode="numeric" placeholder="1 a 6" style="max-width:6rem">
+    </div>
+    <p id="erro" class="sub hidden" style="color:var(--accent)"></p>
     <button class="action" id="comecar" style="margin-top:1rem">Começar</button>
   </div>
 
@@ -128,8 +133,16 @@ th, td { border: 1px solid var(--rule); padding: .35rem .6rem; text-align: left;
    - CRITERIO: a pergunta de cada dupla.
    - TRABALHOS: os 6 roteiros. Cada um: { id, titulo, url }.
      'url' = link do PDF (Google Drive, etc.). Deixe "" enquanto não houver.
-   Os 6 são sorteados em 3 duplas (pareamento, sem repetir roteiro),
-   então cada aluno lê os seis fazendo 3 escolhas. Duplas e lados embaralhados.
+   - DESIGNACOES: as 3 duplas de cada aluno, achadas pelo nome que ele digita.
+     A chave é um hash do nome normalizado (sem acento, sem caixa), em várias
+     grafias — o site não guarda nome nenhum em claro.
+     Ninguém recebe o roteiro do próprio grupo: cada aluno lê os outros cinco,
+     e um deles aparece duas vezes (cinco é ímpar). As 25 designações foram
+     escolhidas para que os 15 pares recebam 5 julgamentos cada — por isso a
+     designação é fixa, e não sorteada aqui.
+   - POR_GRUPO: rede de segurança. Nome não reconhecido (grafia diferente da
+     lista) -> o aluno informa o grupo e recebe uma designação daquele grupo.
+   A ordem das duplas e os lados são embaralhados no navegador.
    Cada roteiro recebe um comentário próprio — o retorno de cada grupo é só
    juntar, do CSV, as linhas do seu roteiro.
 ================================================================= */
@@ -139,15 +152,91 @@ const TAREFA = "Microdrama I";
 const CRITERIO = "Qual dos dois microdramas você considera <b>melhor</b>?";
 const MAX_COMENTARIO = 300;   // limite de caracteres por comentário
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbwfwEOrm6yQe4Q96jy3ruH4LsQmUMytkgRxhq7_uo5ErAB7aGiZInqITwGTPfDVnsA2/exec";  // Web App do Google Apps Script (conta pessoal)
-const INSTRUCAO = "Você vai comparar os seis roteiros em três duplas. Em cada dupla, abra os dois, leia, comente cada um e escolha o melhor. Ao final você terá lido todos os seis.";
+const INSTRUCAO = "Escreva seu nome como está na lista da turma. Você vai comparar, em três duplas, os cinco roteiros que não são do seu grupo — um deles aparece duas vezes, contra adversários diferentes. Em cada dupla, abra os dois, leia, comente cada um e escolha o melhor.";
+
+const DESIGNACOES = {
+  "04b9652a": [["A", "B"], ["A", "E"], ["D", "F"]],
+  "08c56a09": [["A", "C"], ["A", "D"], ["B", "F"]],
+  "112f3b99": [["B", "C"], ["B", "D"], ["E", "F"]],
+  "1369cd71": [["B", "E"], ["C", "D"], ["D", "F"]],
+  "180ec0eb": [["A", "E"], ["B", "C"], ["C", "D"]],
+  "1e374753": [["A", "E"], ["B", "F"], ["D", "E"]],
+  "1ff99478": [["A", "F"], ["C", "F"], ["D", "E"]],
+  "318ab874": [["A", "F"], ["B", "D"], ["C", "D"]],
+  "32efefb0": [["A", "C"], ["C", "D"], ["E", "F"]],
+  "34f7b3c0": [["A", "B"], ["C", "E"], ["C", "F"]],
+  "367257af": [["A", "B"], ["A", "F"], ["C", "E"]],
+  "36890a60": [["A", "D"], ["C", "F"], ["D", "E"]],
+  "3828df63": [["B", "D"], ["C", "E"], ["C", "F"]],
+  "3d817592": [["A", "E"], ["B", "F"], ["D", "E"]],
+  "3e328280": [["A", "D"], ["A", "F"], ["B", "C"]],
+  "45676023": [["A", "B"], ["B", "C"], ["E", "F"]],
+  "46356a75": [["A", "B"], ["B", "C"], ["E", "F"]],
+  "48618aac": [["A", "C"], ["B", "E"], ["C", "D"]],
+  "4a6c73b2": [["A", "C"], ["B", "D"], ["B", "F"]],
+  "4f28bb81": [["A", "B"], ["A", "F"], ["C", "E"]],
+  "54c837d8": [["B", "C"], ["B", "D"], ["E", "F"]],
+  "58fba479": [["B", "F"], ["C", "E"], ["D", "F"]],
+  "617380cd": [["A", "C"], ["B", "E"], ["C", "D"]],
+  "62477b77": [["A", "F"], ["B", "E"], ["D", "E"]],
+  "6339a278": [["B", "F"], ["C", "E"], ["D", "F"]],
+  "69c0c99f": [["A", "C"], ["B", "E"], ["C", "D"]],
+  "6da06c4a": [["A", "F"], ["B", "D"], ["C", "D"]],
+  "82c5a844": [["A", "B"], ["B", "E"], ["D", "F"]],
+  "8c9cce63": [["A", "D"], ["B", "C"], ["D", "E"]],
+  "8ec1c2fb": [["B", "D"], ["C", "E"], ["C", "F"]],
+  "913cbfe9": [["A", "F"], ["B", "E"], ["D", "E"]],
+  "959869e4": [["A", "E"], ["C", "F"], ["D", "F"]],
+  "9b5c3b37": [["A", "C"], ["A", "D"], ["B", "F"]],
+  "a1569f40": [["A", "B"], ["A", "E"], ["D", "F"]],
+  "a29ef2d4": [["A", "C"], ["B", "D"], ["B", "F"]],
+  "a38dc0b0": [["B", "E"], ["C", "D"], ["D", "F"]],
+  "a3d8192f": [["A", "E"], ["B", "D"], ["E", "F"]],
+  "a7e4b0c1": [["A", "F"], ["C", "F"], ["D", "E"]],
+  "af9f6732": [["A", "C"], ["B", "F"], ["E", "F"]],
+  "b1711d5c": [["A", "D"], ["B", "E"], ["C", "E"]],
+  "b25ac2b8": [["A", "E"], ["C", "F"], ["D", "F"]],
+  "b5c1d87f": [["A", "B"], ["B", "E"], ["D", "F"]],
+  "b6fe7f8a": [["B", "F"], ["C", "E"], ["D", "F"]],
+  "bc3f59d7": [["A", "D"], ["B", "C"], ["D", "E"]],
+  "c41ae076": [["A", "C"], ["A", "D"], ["B", "F"]],
+  "c61c37aa": [["A", "D"], ["A", "F"], ["B", "C"]],
+  "c6b3890a": [["A", "E"], ["B", "C"], ["C", "D"]],
+  "c968fb37": [["A", "C"], ["C", "D"], ["E", "F"]],
+  "ccfabc8a": [["A", "F"], ["C", "F"], ["D", "E"]],
+  "cee50d28": [["A", "E"], ["C", "F"], ["D", "F"]],
+  "cf56b4ba": [["A", "F"], ["B", "D"], ["C", "D"]],
+  "d028b359": [["A", "C"], ["B", "F"], ["E", "F"]],
+  "d7c5eb32": [["A", "B"], ["B", "E"], ["D", "F"]],
+  "dafe4d8e": [["A", "D"], ["B", "E"], ["C", "E"]],
+  "ddb8b8f6": [["A", "B"], ["C", "E"], ["C", "F"]],
+  "e3874dbf": [["A", "B"], ["A", "F"], ["C", "E"]],
+  "e9e3ef28": [["A", "D"], ["C", "F"], ["D", "E"]],
+  "ea37fa58": [["B", "E"], ["C", "D"], ["D", "F"]],
+  "eb2f489c": [["A", "F"], ["B", "E"], ["D", "E"]],
+  "ee66a253": [["B", "D"], ["C", "E"], ["C", "F"]],
+  "f4e2cbd7": [["A", "E"], ["B", "D"], ["E", "F"]],
+  "fa9cba13": [["A", "E"], ["B", "F"], ["D", "E"]],
+};
+
+// Se o nome digitado não for reconhecido, o aluno informa o grupo e recebe
+// uma das designações daquele grupo (nenhuma contém o roteiro do próprio grupo).
+const POR_GRUPO = {
+  "1": [[["A", "E"], ["B", "F"], ["D", "E"]], [["A", "F"], ["B", "E"], ["D", "E"]], [["A", "B"], ["B", "E"], ["D", "F"]], [["A", "B"], ["A", "E"], ["D", "F"]], [["A", "E"], ["B", "D"], ["E", "F"]]],
+  "2": [[["A", "C"], ["B", "E"], ["C", "D"]], [["A", "E"], ["B", "C"], ["C", "D"]], [["A", "D"], ["B", "C"], ["D", "E"]], [["A", "D"], ["B", "E"], ["C", "E"]]],
+  "3": [[["A", "C"], ["C", "D"], ["E", "F"]], [["A", "E"], ["C", "F"], ["D", "F"]], [["A", "D"], ["C", "F"], ["D", "E"]], [["A", "F"], ["C", "F"], ["D", "E"]]],
+  "4": [[["A", "C"], ["A", "D"], ["B", "F"]], [["A", "D"], ["A", "F"], ["B", "C"]], [["A", "C"], ["B", "D"], ["B", "F"]], [["A", "F"], ["B", "D"], ["C", "D"]]],
+  "5": [[["A", "B"], ["C", "E"], ["C", "F"]], [["A", "C"], ["B", "F"], ["E", "F"]], [["A", "B"], ["A", "F"], ["C", "E"]], [["A", "B"], ["B", "C"], ["E", "F"]]],
+  "6": [[["B", "C"], ["B", "D"], ["E", "F"]], [["B", "F"], ["C", "E"], ["D", "F"]], [["B", "D"], ["C", "E"], ["C", "F"]], [["B", "E"], ["C", "D"], ["D", "F"]]],
+};
 
 const TRABALHOS = [
-  { id: "A", titulo: "Roteiro A", url: "" },
-  { id: "B", titulo: "Roteiro B", url: "" },
-  { id: "C", titulo: "Roteiro C", url: "" },
-  { id: "D", titulo: "Roteiro D", url: "" },
-  { id: "E", titulo: "Roteiro E", url: "" },
-  { id: "F", titulo: "Roteiro F", url: "" },
+  { id: "A", titulo: "Roteiro A", url: "https://drive.google.com/file/d/1OO0pZ1tp_SlYyrA-o3LQUMNvq60uQfoi/view" },
+  { id: "B", titulo: "Roteiro B", url: "https://drive.google.com/file/d/1aRy0ggThs2-zEIzOLvBFVGoy_jAW0Fs4/view" },
+  { id: "C", titulo: "Roteiro C", url: "https://drive.google.com/file/d/1U8ixPy2jc_Epq-O32xy3pfB-lP031G7_/view" },
+  { id: "D", titulo: "Roteiro D", url: "https://drive.google.com/file/d/1j-CbRCsP9S9F6gffAUUk0RkODa0UgHne/view" },
+  { id: "E", titulo: "Roteiro E", url: "https://drive.google.com/file/d/1W0K1uLcnGCSndfpzefCB9fbmoQzBRVXJ/view" },
+  { id: "F", titulo: "Roteiro F", url: "https://drive.google.com/file/d/1DuAIiukYr1Qc8NzADNYoHShSxbbCurj5/view" },
 ];
 
 /* ================================================================
@@ -164,22 +253,58 @@ const TRABALHOS = [
   $("instrucao").textContent = INSTRUCAO;
   $("criterio").innerHTML = CRITERIO;
 
-  // Sorteia os trabalhos e os agrupa em duplas (pareamento sem repetição):
-  // com 6 roteiros, saem 3 duplas; embaralhar já randomiza duplas e lados.
+  // Monta as duplas do conjunto designado ao aluno (designação fixa, ver CONJUNTOS).
+  // Só a ordem das duplas e o lado de cada roteiro são embaralhados.
   // Cada dupla guarda a escolha e um comentário por roteiro (ca = sobre 'a', cb = sobre 'b').
-  function montarPares() {
-    const ids = TRABALHOS.map(function (t) { return t.id; });
-    for (let k = ids.length - 1; k > 0; k--) {
+  function embaralhar(v) {
+    for (let k = v.length - 1; k > 0; k--) {
       const r = Math.floor(Math.random() * (k + 1));
-      const tmp = ids[k]; ids[k] = ids[r]; ids[r] = tmp;
+      const tmp = v[k]; v[k] = v[r]; v[r] = tmp;
     }
-    const pares = [];
-    for (let n = 0; n + 1 < ids.length; n += 2)
-      pares.push({ a: ids[n], b: ids[n + 1], escolha: null, ca: "", cb: "" });
-    return pares;
+    return v;
   }
 
-  let pares = [], i = 0, nome = "";
+  function montarPares(designacao) {
+    const duplas = embaralhar(designacao.map(function (d) { return d.slice(); }));
+    return duplas.map(function (d) {
+      const lados = embaralhar(d.slice());
+      return { a: lados[0], b: lados[1], escolha: null, ca: "", cb: "" };
+    });
+  }
+
+  let pares = [], i = 0, nome = "", identificacao = "";
+
+  // Normaliza o nome (sem acento, sem caixa, espaços colapsados) e gera as
+  // grafias aceitas: nome inteiro, primeiro+último, primeiro+dois últimos.
+  function normalizar(s) {
+    return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase().replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function chavesDoNome(s) {
+    const p = normalizar(s).split(" ").filter(Boolean);
+    if (!p.length) return [];
+    const ks = [p.join(" ")];
+    if (p.length >= 2) ks.push(p[0] + " " + p[p.length - 1]);
+    if (p.length >= 3) ks.push(p[0] + " " + p[p.length - 2] + " " + p[p.length - 1]);
+    return ks;
+  }
+
+  function hash(s) {
+    let h = 5381;
+    const bytes = new TextEncoder().encode(s);
+    for (let k = 0; k < bytes.length; k++) h = (((h * 33) ^ bytes[k]) >>> 0);
+    return ("0000000" + h.toString(16)).slice(-8);
+  }
+
+  function designacaoPorNome(s) {
+    const ks = chavesDoNome(s);
+    for (let k = 0; k < ks.length; k++) {
+      const d = DESIGNACOES[hash(ks[k])];
+      if (d) return d;
+    }
+    return null;
+  }
 
   function contar(card) {
     const cc = card.querySelector(".cc");
@@ -221,7 +346,7 @@ const TRABALHOS = [
   }
 
   function salvar() {
-    try { localStorage.setItem(KEY, JSON.stringify({ nome: nome, pares: pares })); } catch (e) {}
+    try { localStorage.setItem(KEY, JSON.stringify({ nome: nome, identificacao: identificacao, pares: pares })); } catch (e) {}
   }
 
   function terminar() {
@@ -247,7 +372,7 @@ const TRABALHOS = [
       linhas.push({ dupla: k + 1, roteiro: p.a, venceu: (p.escolha === p.a ? "sim" : "nao"), adversario: p.b, comentario: p.ca });
       linhas.push({ dupla: k + 1, roteiro: p.b, venceu: (p.escolha === p.b ? "sim" : "nao"), adversario: p.a, comentario: p.cb });
     });
-    return { nome: nome, tarefa: TAREFA, linhas: linhas };
+    return { nome: nome, identificacao: identificacao, tarefa: TAREFA, linhas: linhas };
   }
 
   function enviar() {
@@ -275,10 +400,10 @@ const TRABALHOS = [
   }
 
   function baixar() {
-    const linhas = ["nome;tarefa;dupla;roteiro;venceu;adversario;comentario"];
+    const linhas = ["nome;identificacao;tarefa;dupla;roteiro;venceu;adversario;comentario"];
     pares.forEach(function (p, k) {
-      linhas.push([nome, TAREFA, k + 1, p.a, (p.escolha === p.a ? "sim" : "nao"), p.b, p.ca].map(csvSeguro).join(";"));
-      linhas.push([nome, TAREFA, k + 1, p.b, (p.escolha === p.b ? "sim" : "nao"), p.a, p.cb].map(csvSeguro).join(";"));
+      linhas.push([nome, identificacao, TAREFA, k + 1, p.a, (p.escolha === p.a ? "sim" : "nao"), p.b, p.ca].map(csvSeguro).join(";"));
+      linhas.push([nome, identificacao, TAREFA, k + 1, p.b, (p.escolha === p.b ? "sim" : "nao"), p.a, p.cb].map(csvSeguro).join(";"));
     });
     const blob = new Blob(["﻿" + linhas.join("\r\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -291,7 +416,29 @@ const TRABALHOS = [
 
   $("comecar").addEventListener("click", function () {
     nome = $("nome").value.trim();
-    pares = montarPares(); i = 0;
+    const erro = $("erro");
+    if (!nome) { erro.textContent = "Escreva seu nome."; erro.classList.remove("hidden"); return; }
+
+    let designacao = designacaoPorNome(nome);
+    identificacao = "nome";
+
+    if (!designacao) {
+      // Nome fora da lista (ou escrito de outro jeito): pede o grupo.
+      const cx = $("caixaGrupo"), g = $("grupo").value.trim();
+      if (cx.classList.contains("hidden")) {
+        cx.classList.remove("hidden");
+        erro.textContent = "Não achei esse nome na lista da turma. Confira a grafia — ou informe seu grupo abaixo e siga.";
+        erro.classList.remove("hidden");
+        return;
+      }
+      if (!POR_GRUPO[g]) { erro.textContent = "Informe seu grupo (1 a 6)."; erro.classList.remove("hidden"); return; }
+      const opcoes = POR_GRUPO[g];
+      designacao = opcoes[Math.floor(Math.random() * opcoes.length)];
+      identificacao = "grupo " + g;
+    }
+
+    erro.classList.add("hidden");
+    pares = montarPares(designacao); i = 0;
     $("intro").classList.add("hidden");
     $("jogo").classList.remove("hidden");
     mostrar();
