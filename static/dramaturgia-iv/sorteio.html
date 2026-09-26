@@ -84,7 +84,7 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
       <button class="action" id="abrir">Abrir</button>
       <span class="status" id="senhaStatus"></span>
     </div>
-    <p class="hint">A lista da turma e os sorteios feitos estão cifrados no site. A senha só é usada aqui, no navegador.</p>
+    <p class="hint">A lista da turma e os sorteios feitos estão cifrados no site. A senha só é usada aqui, no navegador. Quem recebeu o link da turma não precisa digitar nada.</p>
   </div>
 
   <div id="app" class="hidden">
@@ -164,6 +164,9 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
   var pacote = null;
   fetch('sorteio-dados.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (p) {
     pacote = p;
+    // Link da turma: sorteio.html#k=<senha> abre direto; a senha sai da barra de endereço em seguida.
+    var m = location.hash.match(/^#k=(.+)$/);
+    if (m) { history.replaceState(null, '', location.pathname); abrir(decodeURIComponent(m[1]), false); return; }
     var s = ler(KEY_SENHA, '');
     if (s) abrir(s, true); else $('senha').focus();
   }).catch(function () { $('senhaStatus').textContent = 'Não foi possível carregar os dados do site.'; });
