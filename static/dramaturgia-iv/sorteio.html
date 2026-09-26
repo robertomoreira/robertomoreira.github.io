@@ -26,7 +26,7 @@ h1 { font-size: 1.5rem; margin: 0 0 .3rem; }
 h2 { font-size: 1.15rem; margin: 2.2rem 0 .6rem; }
 .sub { color: var(--muted); margin-top: 0; }
 label { display: block; font-size: .9rem; color: var(--muted); margin: 1.2rem 0 .3rem; }
-input[type=text], input[type=number], input[type=password], textarea {
+input[type=text], input[type=number], input[type=password], textarea, select {
   width: 100%; padding: .55rem .7rem; font: inherit; color: var(--fg);
   background: var(--bg); border: 1px solid var(--rule); border-radius: 6px;
 }
@@ -64,6 +64,10 @@ button.small { padding: .3rem .7rem; font-size: .85rem; }
 .lista .quando { color: var(--muted); font-size: .85rem; }
 .lista .local { font-size: .75rem; color: var(--muted); border: 1px solid var(--rule); border-radius: 3px; padding: 0 .4rem; }
 .hidden { display: none; }
+.selo { font-size: .88rem; border-left: 3px solid var(--accent); padding: .3rem .7rem; margin: 0 0 1rem; }
+.selo.alt { border-left-color: var(--muted); color: var(--muted); }
+details.prof { margin-top: 2.5rem; border-top: 1px solid var(--rule); padding-top: 1rem; }
+details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
 .foot { color: var(--muted); font-size: .8rem; margin-top: 2.5rem; }
 </style>
 </head>
@@ -85,38 +89,24 @@ button.small { padding: .3rem .7rem; font-size: .85rem; }
 
   <div id="app" class="hidden">
 
-    <label for="alunos">Alunos (um por linha, <code>Nome &lt;email&gt;</code> ou só o nome; linhas começadas com <code>#</code> são ignoradas)</label>
-    <textarea id="alunos"></textarea>
-    <p class="hint">Preenchido com a lista oficial da turma. Pode editar; <a href="#" id="recarregar">recarregar a lista oficial</a> desfaz as edições.</p>
-
-    <div class="row">
-      <div>
-        <label for="tarefa">Tarefa</label>
-        <input type="text" id="tarefa" placeholder="Microdrama II">
-        <p class="hint">O nome da tarefa define o sorteio: a mesma tarefa devolve sempre os mesmos grupos.</p>
-      </div>
-      <div>
-        <label for="tamanho">Alunos por grupo</label>
-        <input type="number" id="tamanho" value="4" min="2" max="10">
-      </div>
-    </div>
+    <label for="tarefaSel">Tarefa</label>
+    <select id="tarefaSel"></select>
 
     <div class="actions">
       <button class="action" id="sortear">Sortear</button>
-      <button class="action ghost" id="outro" disabled>Outro sorteio</button>
       <button class="action ghost" id="copiar" disabled>Copiar lista</button>
-      <button class="action ghost" id="guardar" disabled>Guardar este sorteio</button>
       <span class="status" id="status"></span>
     </div>
+    <p class="hint">O sorteio usa a lista oficial da turma e grupos de 4. Quem sortear a mesma tarefa, em qualquer computador, obtém exatamente os mesmos grupos — sortear de novo não muda nada.</p>
 
     <div id="resultado" class="hidden">
       <h2 id="cabecalho"></h2>
+      <p class="selo" id="selo"></p>
       <div class="grid" id="grupos"></div>
     </div>
 
-    <h2>Sorteios feitos</h2>
+    <h2>Sorteios registrados</h2>
     <ul class="lista" id="feitos"></ul>
-    <p class="hint">Os sorteios com data vêm do registro do curso; os marcados "neste navegador" foram guardados aqui e só existem nesta máquina.</p>
 
     <div id="vistaSorteio" class="hidden">
       <h2 id="vistaTitulo"></h2>
@@ -124,7 +114,30 @@ button.small { padding: .3rem .7rem; font-size: .85rem; }
       <div class="grid" id="vistaGrupos"></div>
     </div>
 
-    <p class="foot">Grupos do tamanho pedido; se sobrar um aluno sozinho, ele é distribuído nos primeiros grupos. "Outro sorteio" gera um arranjo alternativo para a mesma tarefa (variante 2, 3…). A última tarefa é montada pelos próprios alunos. Para registrar um sorteio no curso (fora deste navegador), copie a lista e guarde na vault.</p>
+    <details class="prof">
+      <summary>Opções do professor</summary>
+      <label for="alunos">Alunos (um por linha, <code>Nome &lt;email&gt;</code> ou só o nome; linhas começadas com <code>#</code> são ignoradas)</label>
+      <textarea id="alunos"></textarea>
+      <p class="hint">Preenchido com a lista oficial da turma. <a href="#" id="recarregar">Recarregar a lista oficial</a> desfaz as edições.</p>
+      <div class="row">
+        <div>
+          <label for="tarefa">Nome da tarefa</label>
+          <input type="text" id="tarefa" placeholder="Microdrama II">
+        </div>
+        <div>
+          <label for="tamanho">Alunos por grupo</label>
+          <input type="number" id="tamanho" value="4" min="2" max="10">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="action ghost" id="sortearProf">Sortear com estas opções</button>
+        <button class="action ghost" id="outro" disabled>Outro sorteio</button>
+        <button class="action ghost" id="guardar" disabled>Guardar neste navegador</button>
+      </div>
+      <p class="hint">Resultado com lista, tamanho ou variante diferentes do padrão aparece marcado como alternativo: não é o sorteio da turma.</p>
+    </details>
+
+    <p class="foot">Se sobrar um aluno sozinho, ele entra num dos primeiros grupos. A última tarefa (Microdrama V) é montada pelos próprios alunos.</p>
 
   </div>
 
@@ -132,11 +145,13 @@ button.small { padding: .3rem .7rem; font-size: .85rem; }
 
 <script>
 (function () {
+  var TAREFAS = ['Microdrama I', 'Microdrama II', 'Microdrama III', 'Microdrama IV'];
+  var TAMANHO = 4;
   var KEY = 'dramaturgia-iv-sorteio';
   var KEY_SENHA = 'dramaturgia-iv-senha';
   var KEY_LOCAIS = 'dramaturgia-iv-sorteios-locais';
   var $ = function (id) { return document.getElementById(id); };
-  var variante = 1, grupos = [], tarefaAtual = '', oficial = { alunos: [], sorteios: [] }, locais = [];
+  var variante = 1, grupos = [], tarefaAtual = '', notaAtual = '', oficial = { alunos: [], sorteios: [] }, locais = [];
 
   // --- utilidades ---
   function ler(k, padrao) { try { return JSON.parse(localStorage.getItem(k)) || padrao; } catch (e) { return padrao; } }
@@ -174,11 +189,22 @@ button.small { padding: .3rem .7rem; font-size: .85rem; }
   $('senha').addEventListener('keydown', function (e) { if (e.key === 'Enter') abrir($('senha').value, false); });
 
   // --- app ---
+  function registrado(tarefa) { return oficial.sorteios.filter(function (s) { return s.tarefa === tarefa; })[0]; }
+  function listaOficial() { return oficial.alunos.map(linha).join('\n'); }
+
   function iniciar() {
     $('bloqueio').classList.add('hidden');
     $('app').classList.remove('hidden');
+    var sel = $('tarefaSel'), proxima = null;
+    TAREFAS.forEach(function (t) {
+      var o = document.createElement('option'); o.value = t;
+      o.textContent = t + (registrado(t) ? ' (já sorteado)' : '');
+      sel.appendChild(o);
+      if (!proxima && !registrado(t)) proxima = t;
+    });
+    sel.value = proxima || TAREFAS[0];
     var salvo = ler(KEY, {});
-    $('alunos').value = salvo.alunos || oficial.alunos.map(linha).join('\n');
+    $('alunos').value = salvo.alunos || listaOficial();
     if (salvo.tarefa) $('tarefa').value = salvo.tarefa;
     if (salvo.tamanho) $('tamanho').value = salvo.tamanho;
     locais = ler(KEY_LOCAIS, []);
@@ -190,7 +216,7 @@ button.small { padding: .3rem .7rem; font-size: .85rem; }
   }
   ['alunos', 'tarefa', 'tamanho'].forEach(function (id) { $(id).addEventListener('input', guardarEstado); });
   $('recarregar').addEventListener('click', function (e) {
-    e.preventDefault(); $('alunos').value = oficial.alunos.map(linha).join('\n'); guardarEstado();
+    e.preventDefault(); $('alunos').value = listaOficial(); guardarEstado();
     $('status').textContent = 'Lista oficial recarregada.';
   });
 
@@ -220,8 +246,8 @@ button.small { padding: .3rem .7rem; font-size: .85rem; }
     };
   }
 
-  function lerAlunos() {
-    return $('alunos').value.split(/\r?\n/).map(function (l) { return l.trim(); })
+  function lerAlunos(txt) {
+    return txt.split(/\r?\n/).map(function (l) { return l.trim(); })
       .filter(function (l) { return l && l[0] !== '#'; })
       .map(function (l) {
         var m = l.match(/^(.*?)\s*<([^>]+)>\s*$/);
@@ -229,7 +255,8 @@ button.small { padding: .3rem .7rem; font-size: .85rem; }
       });
   }
 
-  function montar(alunos, tamanho, rng) {
+  function montar(alunos, tamanho, semente) {
+    var s = cyrb128(semente), rng = sfc32(s[0], s[1], s[2], s[3]);
     var b = alunos.slice();
     for (var i = b.length - 1; i > 0; i--) {
       var j = Math.floor(rng() * (i + 1)); var t = b[i]; b[i] = b[j]; b[j] = t;
@@ -243,21 +270,47 @@ button.small { padding: .3rem .7rem; font-size: .85rem; }
     return gs;
   }
 
-  function sortear() {
-    var alunos = lerAlunos();
-    var tamanho = parseInt($('tamanho').value, 10) || 4;
-    tarefaAtual = $('tarefa').value.trim();
-    if (!tarefaAtual) { $('status').textContent = 'Dê um nome à tarefa.'; $('tarefa').focus(); return; }
-    if (alunos.length < tamanho) { $('status').textContent = 'Poucos alunos (' + alunos.length + ') para grupos de ' + tamanho + '.'; return; }
-    var semente = tarefaAtual + (variante > 1 ? ' #' + variante : '');
-    var s = cyrb128(semente);
-    grupos = montar(alunos, tamanho, sfc32(s[0], s[1], s[2], s[3]));
-    $('cabecalho').textContent = tarefaAtual + ' — ' + alunos.length + ' alunos em ' + grupos.length + ' grupos';
-    renderGrupos($('grupos'), grupos, tarefaAtual);
+  function mostrar(tarefa, gs, selo, alternativo) {
+    tarefaAtual = tarefa; grupos = gs;
+    var n = gs.reduce(function (m, g) { return m + g.length; }, 0);
+    $('cabecalho').textContent = tarefa + ' — ' + n + ' alunos em ' + gs.length + ' grupos';
+    $('selo').textContent = selo;
+    $('selo').className = 'selo' + (alternativo ? ' alt' : '');
+    renderGrupos($('grupos'), gs, tarefa);
     $('resultado').classList.remove('hidden');
     $('vistaSorteio').classList.add('hidden');
-    $('status').textContent = variante > 1 ? 'Variante ' + variante + '.' : '';
-    $('outro').disabled = false; $('copiar').disabled = false; $('guardar').disabled = false;
+    $('copiar').disabled = false;
+    $('status').textContent = '';
+  }
+
+  // Sorteio da turma: tarefa da lista, lista oficial, grupos de 4, sem variante.
+  function sortearOficial() {
+    var tarefa = $('tarefaSel').value, reg = registrado(tarefa);
+    notaAtual = '';
+    if (reg) {
+      mostrar(tarefa, reg.grupos.map(function (g) { return g.map(function (i) { return oficial.alunos[i]; }); }),
+        'Sorteio registrado em ' + reg.data + '. Estes são os grupos da tarefa.', false);
+    } else {
+      mostrar(tarefa, montar(oficial.alunos, TAMANHO, tarefa),
+        'Sorteio oficial: lista da turma, grupos de ' + TAMANHO + '. Qualquer pessoa que sortear ' + tarefa + ' obtém estes mesmos grupos.', false);
+    }
+    $('outro').disabled = true; $('guardar').disabled = true;
+  }
+
+  // Opções do professor: lista, nome, tamanho e variante livres.
+  function sortearProf() {
+    var alunos = lerAlunos($('alunos').value);
+    var tamanho = parseInt($('tamanho').value, 10) || TAMANHO;
+    var tarefa = $('tarefa').value.trim();
+    if (!tarefa) { $('status').textContent = 'Dê um nome à tarefa.'; $('tarefa').focus(); return; }
+    if (alunos.length < tamanho) { $('status').textContent = 'Poucos alunos (' + alunos.length + ') para grupos de ' + tamanho + '.'; return; }
+    var padrao = TAREFAS.indexOf(tarefa) >= 0 && !registrado(tarefa) && tamanho === TAMANHO && variante === 1 &&
+      lerAlunos($('alunos').value).map(linha).join('\n') === listaOficial();
+    notaAtual = padrao ? '' : 'alternativo' + (variante > 1 ? ', variante ' + variante : '');
+    mostrar(tarefa, montar(alunos, tamanho, tarefa + (variante > 1 ? ' #' + variante : '')),
+      padrao ? 'Sorteio oficial (coincide com o da turma).' :
+        'Sorteio alternativo' + (variante > 1 ? ' (variante ' + variante + ')' : '') + ' — não é o sorteio da turma.', !padrao);
+    $('outro').disabled = false; $('guardar').disabled = false;
     guardarEstado();
   }
 
@@ -290,7 +343,7 @@ button.small { padding: .3rem .7rem; font-size: .85rem; }
     return out;
   }
 
-  // --- sorteios feitos ---
+  // --- sorteios registrados ---
   function todosFeitos() {
     var lista = oficial.sorteios.map(function (s) {
       return { id: slug(s.tarefa), tarefa: s.tarefa, quando: s.data, local: false,
@@ -333,11 +386,12 @@ button.small { padding: .3rem .7rem; font-size: .85rem; }
   window.addEventListener('hashchange', mostrarPorHash);
 
   // --- botões ---
-  $('sortear').addEventListener('click', function () { variante = 1; sortear(); });
-  $('outro').addEventListener('click', function () { variante += 1; sortear(); });
-  $('tarefa').addEventListener('keydown', function (e) { if (e.key === 'Enter') { variante = 1; sortear(); } });
+  $('sortear').addEventListener('click', sortearOficial);
+  $('sortearProf').addEventListener('click', function () { variante = 1; sortearProf(); });
+  $('outro').addEventListener('click', function () { variante += 1; sortearProf(); });
+  $('tarefa').addEventListener('keydown', function (e) { if (e.key === 'Enter') { variante = 1; sortearProf(); } });
   $('copiar').addEventListener('click', function () {
-    var t = texto(tarefaAtual, grupos, variante > 1 ? 'variante ' + variante : '');
+    var t = texto(tarefaAtual, grupos, notaAtual);
     var done = function () { $('status').textContent = 'Lista copiada.'; };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { fallback(t); done(); });
     else { fallback(t); done(); }

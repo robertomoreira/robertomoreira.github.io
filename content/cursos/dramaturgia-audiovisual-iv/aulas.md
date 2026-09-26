@@ -12,7 +12,7 @@ Deposite o **PDF** do seu roteiro na pasta da sua tarefa, dentro desta pasta do 
 
 ## Sorteio de grupos
 
-**[→ Sortear os grupos de uma tarefa](/dramaturgia-iv/sorteio.html)** — cole a lista da turma, dê o nome da tarefa e clique em Sortear. A lista fica só no seu navegador.
+**[→ Sortear os grupos de uma tarefa](/dramaturgia-iv/sorteio.html)** — digite a senha da turma, escolha a tarefa e clique em Sortear. Qualquer pessoa da turma pode fazer o sorteio: a mesma tarefa dá sempre os mesmos grupos, e o link "E-mail ao grupo" avisa cada grupo.
 
 ## Calendário das aulas
 
