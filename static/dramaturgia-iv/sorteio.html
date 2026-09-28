@@ -95,6 +95,7 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
     <div class="actions">
       <button class="action" id="sortear">Sortear</button>
       <button class="action ghost" id="copiar" disabled>Copiar lista</button>
+      <button class="action hidden" id="enviar">Enviar e-mails aos grupos</button>
       <span class="status" id="status"></span>
     </div>
     <p class="hint">O sorteio usa a lista oficial da turma e grupos de 4. Quem sortear a mesma tarefa, em qualquer computador, obtém exatamente os mesmos grupos — sortear de novo não muda nada.</p>
@@ -147,11 +148,14 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
 (function () {
   var TAREFAS = ['Microdrama I', 'Microdrama II', 'Microdrama III', 'Microdrama IV'];
   var TAMANHO = 4;
+  // Web App do Apps Script (conta pessoal) que envia os e-mails — enviar_grupos.gs na vault.
+  // Vazio = botão de envio escondido; fica só o "E-mail ao grupo" de cada cartão.
+  var ENDPOINT_EMAIL = '';
   var KEY = 'dramaturgia-iv-sorteio';
   var KEY_SENHA = 'dramaturgia-iv-senha';
   var KEY_LOCAIS = 'dramaturgia-iv-sorteios-locais';
   var $ = function (id) { return document.getElementById(id); };
-  var variante = 1, grupos = [], tarefaAtual = '', notaAtual = '', oficial = { alunos: [], sorteios: [] }, locais = [];
+  var variante = 1, grupos = [], tarefaAtual = '', notaAtual = '', senhaAtual = '', confirmando = false, oficial = { alunos: [], sorteios: [] }, locais = [];
 
   // --- utilidades ---
   function ler(k, padrao) { try { return JSON.parse(localStorage.getItem(k)) || padrao; } catch (e) { return padrao; } }
@@ -181,6 +185,7 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
       return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(pacote.iv) }, key, b64(pacote.dados));
     }).then(function (buf) {
       oficial = JSON.parse(new TextDecoder().decode(buf));
+      senhaAtual = senha;
       gravar(KEY_SENHA, senha);
       iniciar();
     }).catch(function () {
@@ -284,6 +289,7 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
     $('vistaSorteio').classList.add('hidden');
     $('copiar').disabled = false;
     $('status').textContent = '';
+    $('enviar').classList.add('hidden'); resetEnviar();
   }
 
   // Sorteio da turma: tarefa da lista, lista oficial, grupos de 4, sem variante.
@@ -296,6 +302,7 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
     } else {
       mostrar(tarefa, montar(oficial.alunos, TAMANHO, tarefa),
         'Sorteio oficial: lista da turma, grupos de ' + TAMANHO + '. Qualquer pessoa que sortear ' + tarefa + ' obtém estes mesmos grupos.', false);
+      if (ENDPOINT_EMAIL) $('enviar').classList.remove('hidden');
     }
     $('outro').disabled = true; $('guardar').disabled = true;
   }
@@ -317,6 +324,41 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
     guardarEstado();
   }
 
+  function nomesJuntos(g) {
+    var n = g.map(function (a) { return a.nome; });
+    return n.length < 2 ? n.join('') : n.slice(0, -1).join(', ') + ' e ' + n[n.length - 1];
+  }
+  function mensagem(tarefa, g) { return 'Seu grupo para a atividade ' + tarefa + ' é ' + nomesJuntos(g) + ', copiados nesse e-mail.'; }
+
+  // Envio automático: um e-mail por grupo, pelo Web App. Dois cliques (o segundo confirma).
+  function resetEnviar() { confirmando = false; $('enviar').disabled = false; $('enviar').textContent = 'Enviar e-mails aos grupos'; }
+  function enviar() {
+    var total = grupos.reduce(function (m, g) { return m + g.length; }, 0);
+    if (!confirmando) {
+      confirmando = true;
+      $('enviar').textContent = 'Confirmar: enviar a ' + total + ' alunos (' + grupos.length + ' e-mails)';
+      $('status').textContent = 'Cada tarefa só pode ser enviada uma vez.';
+      return;
+    }
+    $('enviar').disabled = true; $('enviar').textContent = 'Enviando…'; $('status').textContent = '';
+    fetch(ENDPOINT_EMAIL, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ senha: senhaAtual, tarefa: tarefaAtual,
+        grupos: grupos.map(function (g) { return g.map(function (a) { return { nome: a.nome, email: a.email }; }); }) })
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      if (res.ok) {
+        $('enviar').classList.add('hidden');
+        $('status').textContent = 'E-mails enviados: ' + res.grupos + ' grupos, ' + res.alunos + ' alunos (' + res.quando + ').';
+      } else {
+        resetEnviar(); $('status').textContent = res.erro || 'O envio falhou.';
+        if (res.jaEnviado) $('enviar').classList.add('hidden');
+      }
+    }).catch(function () {
+      resetEnviar();
+      $('status').textContent = 'Sem resposta do servidor de e-mail. Confira na caixa do professor antes de tentar de novo.';
+    });
+  }
+
   function renderGrupos(box, gs, tarefa) {
     box.innerHTML = '';
     gs.forEach(function (g, n) {
@@ -329,7 +371,8 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
       var emails = g.map(function (a) { return a.email; }).filter(Boolean);
       if (emails.length) {
         var a = document.createElement('a'); a.className = 'mail';
-        a.href = 'mailto:' + emails.join(',') + '?subject=' + encodeURIComponent('Dramaturgia IV — ' + tarefa + ' — Grupo ' + (n + 1));
+        a.href = 'mailto:' + emails.join(',') + '?subject=' + encodeURIComponent('Dramaturgia IV — ' + tarefa + ' — Grupo ' + (n + 1)) +
+          '&body=' + encodeURIComponent(mensagem(tarefa, g));
         a.textContent = 'E-mail ao grupo'; card.appendChild(a);
       }
       box.appendChild(card);
@@ -390,6 +433,7 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
 
   // --- botões ---
   $('sortear').addEventListener('click', sortearOficial);
+  $('enviar').addEventListener('click', enviar);
   $('sortearProf').addEventListener('click', function () { variante = 1; sortearProf(); });
   $('outro').addEventListener('click', function () { variante += 1; sortearProf(); });
   $('tarefa').addEventListener('keydown', function (e) { if (e.key === 'Enter') { variante = 1; sortearProf(); } });
