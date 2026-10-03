@@ -198,7 +198,9 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
 
   // --- app ---
   function registrado(tarefa) { return oficial.sorteios.filter(function (s) { return s.tarefa === tarefa; })[0]; }
-  function listaOficial() { return oficial.alunos.map(linha).join('\n'); }
+  // quem saiu da turma (inativo) só aparece nos grupos já registrados, nunca em sorteio novo
+  function ativos() { return oficial.alunos.filter(function (a) { return !a.inativo; }); }
+  function listaOficial() { return ativos().map(linha).join('\n'); }
 
   function iniciar() {
     $('bloqueio').classList.add('hidden');
@@ -300,7 +302,7 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
       mostrar(tarefa, reg.grupos.map(function (g) { return g.map(function (i) { return oficial.alunos[i]; }); }),
         'Sorteio registrado em ' + reg.data + '. Estes são os grupos da tarefa.', false);
     } else {
-      mostrar(tarefa, montar(oficial.alunos, TAMANHO, tarefa),
+      mostrar(tarefa, montar(ativos(), TAMANHO, tarefa),
         'Sorteio oficial: lista da turma, grupos de ' + TAMANHO + '. Qualquer pessoa que sortear ' + tarefa + ' obtém estes mesmos grupos.', false);
       if (ENDPOINT_EMAIL) $('enviar').classList.remove('hidden');
     }
