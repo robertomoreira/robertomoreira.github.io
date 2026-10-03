@@ -25,14 +25,17 @@ Segundo semestre de 2026 · quintas-feiras.
 | 10/09 | Discussão de microdramas; logline e título | Microdrama I proposto: título de série, logline e primeiro episódio |
 | 17/09 | Participação no GEECT | **Entrega do Microdrama I** — [depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
 | 24/09 | Discussão dos Microdramas I (Elena Altheman) | [Comparar os roteiros do Microdrama I](/dramaturgia-iv/microdrama-1.html) · Microdrama II proposto: título de série, logline e primeiro episódio |
-| 15/10 | Estruturas narrativas; a profissão de roteirista (Anna Muylaert) | **Entrega do Microdrama II** — [depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
+| 01/10 | Estruturas narrativas | |
+| 08/10 | A definir | **Entrega do Microdrama II** — [depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
+| 15/10 | A profissão de roteirista (Anna Muylaert) | |
 | 22/10 | Discussão do Microdrama II (Renato Candido) | Microdrama III proposto: título de série, logline e primeiro episódio |
-| 29/10 | CILECT | **Entrega do Microdrama III** — [depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
+| 29/10 | Sem aula (CILECT) | **Entrega do Microdrama III** — [depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
 | 05/11 | Discussão do Microdrama III (Ludmila Naves) | Microdrama IV proposto: série com 3 episódios |
 | 12/11 | O personagem e o pitching (projeto "É Nóis na Fita", Eliana Fonseca) | **Entrega do Microdrama IV** — [depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
 | 19/11 | Discussão dos Microdramas com 3 episódios I (Rodrigo Ferreira Thomé) | Microdrama V proposto: série com 3 episódios |
 | 26/11 | Situação dramática, emoção e autoria coletiva | **Entrega do Microdrama V** — [depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
 | 03/12 | Discussão dos Microdramas com 3 episódios II (Vitor Brandt e Denis Nielsen) | |
+| 10/12 | A definir | |
 | 17/12 | Encerramento do semestre | |
 
 Os exercícios de comparação das demais tarefas serão publicados conforme o curso avança.
