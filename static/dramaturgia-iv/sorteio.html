@@ -265,12 +265,28 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
       });
   }
 
-  function montar(alunos, tamanho, semente) {
-    var s = cyrb128(semente), rng = sfc32(s[0], s[1], s[2], s[3]);
-    var b = alunos.slice();
-    for (var i = b.length - 1; i > 0; i--) {
-      var j = Math.floor(rng() * (i + 1)); var t = b[i]; b[i] = b[j]; b[j] = t;
-    }
+  // Embaralha com a semente e, havendo sorteios anteriores, troca membros entre grupos
+  // até minimizar os pares que já estiveram juntos (determinístico: mesma semente, mesmos grupos).
+  function chave(a) { return (a.email || a.nome || '').toLowerCase(); }
+  function contarPares(anteriores) {
+    var m = {};
+    (anteriores || []).forEach(function (g) {
+      for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) {
+        var k = [g[i], g[j]].sort().join('|'); m[k] = (m[k] || 0) + 1;
+      }
+    });
+    return m;
+  }
+  function custo(gs, pares) {
+    var c = 0;
+    gs.forEach(function (g) {
+      for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) {
+        var n = pares[[chave(g[i]), chave(g[j])].sort().join('|')] || 0; c += n * n;
+      }
+    });
+    return c;
+  }
+  function dividir(b, tamanho) {
     var gs = [];
     for (var k = 0; k < b.length; k += tamanho) gs.push(b.slice(k, k + tamanho));
     if (gs.length > 1 && gs[gs.length - 1].length === 1) {
@@ -278,6 +294,42 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
       sobra.forEach(function (a, n) { gs[n % gs.length].push(a); });
     }
     return gs;
+  }
+  function embaralhar(alunos, rng) {
+    var b = alunos.slice();
+    for (var i = b.length - 1; i > 0; i--) {
+      var j = Math.floor(rng() * (i + 1)); var t = b[i]; b[i] = b[j]; b[j] = t;
+    }
+    return b;
+  }
+  function montar(alunos, tamanho, semente, anteriores) {
+    var s = cyrb128(semente), rng = sfc32(s[0], s[1], s[2], s[3]);
+    var pares = contarPares(anteriores);
+    var melhor = dividir(embaralhar(alunos, rng), tamanho), cMelhor = custo(melhor, pares);
+    if (!anteriores || !anteriores.length) return melhor;
+    for (var r = 0; r < 40 && cMelhor > 0; r++) {
+      var gs = r === 0 ? melhor.map(function (g) { return g.slice(); }) : dividir(embaralhar(alunos, rng), tamanho);
+      var c = custo(gs, pares);
+      for (var it = 0; it < 4000 && c > 0; it++) {
+        var a = Math.floor(rng() * gs.length), b = Math.floor(rng() * gs.length);
+        if (a === b) continue;
+        var i = Math.floor(rng() * gs[a].length), j = Math.floor(rng() * gs[b].length);
+        var t = gs[a][i]; gs[a][i] = gs[b][j]; gs[b][j] = t;
+        var c2 = custo(gs, pares);
+        if (c2 <= c) c = c2; else { t = gs[a][i]; gs[a][i] = gs[b][j]; gs[b][j] = t; }
+      }
+      if (c < cMelhor) { melhor = gs; cMelhor = c; }
+    }
+    return melhor;
+  }
+  // grupos de sorteios já registrados (de outras tarefas), como listas de chaves, para evitar repetir pares
+  function anterioresDe(tarefa) {
+    var out = [];
+    oficial.sorteios.forEach(function (s) {
+      if (s.tarefa === tarefa) return;
+      s.grupos.forEach(function (g) { out.push(g.map(function (i) { return chave(oficial.alunos[i]); })); });
+    });
+    return out;
   }
 
   function mostrar(tarefa, gs, selo, alternativo) {
@@ -302,7 +354,7 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
       mostrar(tarefa, reg.grupos.map(function (g) { return g.map(function (i) { return oficial.alunos[i]; }); }),
         'Sorteio registrado em ' + reg.data + '. Estes são os grupos da tarefa.', false);
     } else {
-      mostrar(tarefa, montar(ativos(), TAMANHO, tarefa),
+      mostrar(tarefa, montar(ativos(), TAMANHO, tarefa, anterioresDe(tarefa)),
         'Sorteio oficial: lista da turma, grupos de ' + TAMANHO + '. Qualquer pessoa que sortear ' + tarefa + ' obtém estes mesmos grupos.', false);
       if (ENDPOINT_EMAIL) $('enviar').classList.remove('hidden');
     }
@@ -319,7 +371,7 @@ details.prof summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
     var padrao = TAREFAS.indexOf(tarefa) >= 0 && !registrado(tarefa) && tamanho === TAMANHO && variante === 1 &&
       lerAlunos($('alunos').value).map(linha).join('\n') === listaOficial();
     notaAtual = padrao ? '' : 'alternativo' + (variante > 1 ? ', variante ' + variante : '');
-    mostrar(tarefa, montar(alunos, tamanho, tarefa + (variante > 1 ? ' #' + variante : '')),
+    mostrar(tarefa, montar(alunos, tamanho, tarefa + (variante > 1 ? ' #' + variante : ''), anterioresDe(tarefa)),
       padrao ? 'Sorteio oficial (coincide com o da turma).' :
         'Sorteio alternativo' + (variante > 1 ? ' (variante ' + variante + ')' : '') + ' — não é o sorteio da turma.', !padrao);
     $('outro').disabled = false; $('guardar').disabled = false;
