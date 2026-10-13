@@ -14,6 +14,7 @@ weight: 30
 - [Análise dramática - Life](https://drive.google.com/file/d/1rOtA-rXXzBqF_TND0j1ypJOyGzlTxS_y/view?usp=drive_link)
 - [Análise dramática - Rabiger](https://drive.google.com/file/d/1ijINTf4Pg6o0BdQXvH44SjDTaiSxQ9MH/view?usp=drive_link)
 - [Análise dramática - Weston](https://drive.google.com/file/d/1B4OmnhTtQ08vdk0yREyVayjmAWoTLp21/view?usp=drive_link)
+- [Weston sobre direção de resultados](/cursos/direcao-ii/aulas/weston-direcao-de-resultados/) (tradução de *Directing Actors*, cap. 1)
 - [Análise dramática - Hodge](https://drive.google.com/file/d/1-tpunvoSuR2uUYQgbmnQlYTl64R8vlti/view?usp=drive_link)
 - [Bazin - A evolução da linguagem cinematográfica](https://drive.google.com/file/d/1eZMLtYV1VzrjF8-Kh7nC0-qB5Jp8g5Oe/view?usp=sharing)
 
