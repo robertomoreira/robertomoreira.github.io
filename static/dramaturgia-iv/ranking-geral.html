@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comparação de roteiros</title>
+<style>
+:root {
+  --bg: #fbfaf8; --fg: #1c1b19; --muted: #6b675f; --accent: #7a2e2e;
+  --rule: #e2ded6; --card: #fff; --shadow: rgba(0,0,0,.06); --win: #2f6b3a;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191817; --fg: #e8e5df; --muted: #a29d93; --accent: #d08770;
+    --rule: #33312d; --card: #211f1d; --shadow: rgba(0,0,0,.4); --win: #7bbf88;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Georgia, serif; line-height: 1.6;
+}
+.wrap { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+h1 { font-size: 1.5rem; margin: 0 0 .3rem; }
+.sub { color: var(--muted); margin-top: 0; }
+label { display: block; font-size: .9rem; color: var(--muted); margin: 1.2rem 0 .3rem; }
+input[type=text], textarea {
+  width: 100%; padding: .55rem .7rem; font: inherit; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--rule); border-radius: 6px;
+}
+textarea { min-height: 4.2rem; resize: vertical; }
+.bar { height: 5px; background: var(--rule); border-radius: 3px; margin: 1.5rem 0 .4rem; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); width: 0; transition: width .25s; }
+.count { font-size: .85rem; color: var(--muted); text-align: right; }
+.crit { text-align: center; font-size: 1.05rem; margin: 1.4rem 0 1rem; }
+.crit b { color: var(--accent); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 34rem) { .pair { grid-template-columns: 1fr; } }
+.card {
+  background: var(--card); border: 2px solid var(--rule); border-radius: 10px;
+  padding: 1rem; box-shadow: 0 1px 3px var(--shadow); display: flex; flex-direction: column; gap: .6rem;
+}
+.card.sel { border-color: var(--win); }
+.card .t { font-weight: 700; }
+.card .clabel { font-size: .82rem; color: var(--muted); margin: 0; }
+.card .ccount { font-size: .72rem; color: var(--muted); text-align: right; margin: 0; }
+.card .ccount.cheio { color: var(--accent); }
+.open {
+  display: inline-block; align-self: flex-start; font-size: .9rem; text-decoration: none;
+  color: var(--accent); border: 1px solid var(--rule); border-radius: 6px; padding: .3rem .7rem;
+}
+.open.disabled { color: var(--muted); pointer-events: none; opacity: .6; }
+.pick {
+  margin-top: .3rem; font: inherit; cursor: pointer; border: 0; border-radius: 6px;
+  padding: .55rem; background: var(--accent); color: #fff;
+}
+.pick.sel { background: var(--win); }
+.nav { display: flex; justify-content: space-between; margin-top: 1.4rem; }
+button.action {
+  font: inherit; background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+  padding: .6rem 1.1rem; cursor: pointer;
+}
+button.action:disabled { opacity: .45; cursor: default; }
+button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--rule); }
+.hidden { display: none; }
+table { border-collapse: collapse; width: 100%; margin-top: 1rem; font-size: .88rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--rule); padding: .35rem .6rem; text-align: left; vertical-align: top; }
+.foot { color: var(--muted); font-size: .8rem; margin-top: 2.5rem; }
+.card .clabel, .card .cc, .card .ccount { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="intro">
+    <h1 id="titulo"></h1>
+    <p class="sub" id="tarefaNome"></p>
+    <p id="instrucao"></p>
+    <label for="nome">Seu nome</label>
+    <input type="text" id="nome" placeholder="Nome e sobrenome" autocomplete="name">
+    <div id="caixaGrupo" class="hidden">
+      <label for="grupo">Os roteiros que você assinou (um por tarefa)</label>
+      <select id="grupo" style="max-width:100%;font:inherit;padding:.45rem"></select>
+    </div>
+    <p id="erro" class="sub hidden" style="color:var(--accent)"></p>
+    <button class="action" id="comecar" style="margin-top:1rem">Começar</button>
+  </div>
+
+  <div id="jogo" class="hidden">
+    <div class="bar"><span id="progresso"></span></div>
+    <div class="count" id="contador"></div>
+    <p class="crit" id="criterio"></p>
+    <div class="pair">
+      <div class="card" id="cardEsq">
+        <span class="t"></span>
+        <a class="open" target="_blank" rel="noopener">Abrir roteiro ↗</a>
+        <p class="clabel">Comentário sobre este roteiro (pontos fortes e fracos):</p>
+        <textarea class="cc"></textarea>
+        <p class="ccount"></p>
+        <button class="pick">Este é melhor</button>
+      </div>
+      <div class="card" id="cardDir">
+        <span class="t"></span>
+        <a class="open" target="_blank" rel="noopener">Abrir roteiro ↗</a>
+        <p class="clabel">Comentário sobre este roteiro (pontos fortes e fracos):</p>
+        <textarea class="cc"></textarea>
+        <p class="ccount"></p>
+        <button class="pick">Este é melhor</button>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="action ghost" id="voltar">← Voltar</button>
+      <button class="action" id="proximo">Próximo →</button>
+    </div>
+  </div>
+
+  <div id="fim" class="hidden">
+    <h1>Concluído</h1>
+    <p>Obrigado, <b id="nomeFim"></b>. Suas escolhas foram registradas.</p>
+    <p id="envioStatus"></p>
+    <button class="action" id="baixar">Baixar uma cópia (CSV)</button>
+    <button class="action ghost" id="refazer">Refazer</button>
+    <table id="tabela"></table>
+  </div>
+
+  <p class="foot">Comparação par a par — roda inteiramente no seu navegador; nada é enviado a servidor algum.</p>
+</div>
+
+<script>
+/* ================================================================
+   CONFIGURAÇÃO  —  editar por tarefa
+   ================================================================
+   - TAREFA: qual entrega ("Microdrama I", "Microdrama II"…).
+   - CRITERIO: a pergunta de cada dupla.
+   - TRABALHOS: os 6 roteiros. Cada um: { id, titulo, url }.
+     'url' = link do PDF (Google Drive, etc.). Deixe "" enquanto não houver.
+   - DESIGNACOES: as 3 duplas de cada aluno, achadas pelo nome que ele digita.
+     A chave é um hash do nome normalizado (sem acento, sem caixa), em várias
+     grafias — o site não guarda nome nenhum em claro.
+     Ninguém recebe o roteiro do próprio grupo: cada aluno lê os outros cinco,
+     e um deles aparece duas vezes (cinco é ímpar). As 25 designações foram
+     escolhidas para que os 15 pares recebam 5 julgamentos cada — por isso a
+     designação é fixa, e não sorteada aqui.
+   - POR_GRUPO: rede de segurança. Nome não reconhecido (grafia diferente da
+     lista) -> o aluno informa o grupo e recebe uma designação daquele grupo.
+   A ordem das duplas e os lados são embaralhados no navegador.
+   Cada roteiro recebe um comentário próprio — o retorno de cada grupo é só
+   juntar, do CSV, as linhas do seu roteiro.
+================================================================= */
+
+const TITULO = "Comparação de roteiros — Dramaturgia IV";
+const TAREFA = "Ranking geral (I, III e IV)";
+const CRITERIO = "Qual dos dois microdramas você considera <b>melhor</b>?";
+const MAX_COMENTARIO = 0;   // rodada sem comentário
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbwfwEOrm6yQe4Q96jy3ruH4LsQmUMytkgRxhq7_uo5ErAB7aGiZInqITwGTPfDVnsA2/exec";  // Web App do Google Apps Script (conta pessoal)
+const INSTRUCAO = "Escreva seu nome como está na lista da turma. Você recebe seis roteiros das tarefas I, III e IV, nenhum do seu grupo, combinados em nove duplas. Cada roteiro aparece em três duplas: leia-o na primeira vez e, nas seguintes, compare de memória ou reabra o PDF. Em cada dupla, escolha o melhor. Nesta rodada não há comentário: só a escolha.";
+
+// Gerado por gerar_ranking_geral.py (designacao_ranking_geral.json); não editar à mão.
+const DESIGNACOES = {
+  "08c56a09": [["A", "H"], ["A", "L"], ["A", "M"], ["B", "H"], ["B", "K"], ["B", "M"], ["H", "L"], ["K", "L"], ["K", "M"]],
+  "112f3b99": [["B", "D"], ["B", "F"], ["B", "M"], ["D", "L"], ["D", "P"], ["F", "M"], ["F", "P"], ["L", "M"], ["L", "P"]],
+  "180ec0eb": [["E", "F"], ["E", "J"], ["E", "N"], ["F", "J"], ["F", "L"], ["J", "O"], ["L", "N"], ["L", "O"], ["N", "O"]],
+  "1ff99478": [["C", "G"], ["C", "I"], ["C", "M"], ["G", "I"], ["G", "N"], ["H", "I"], ["H", "M"], ["H", "N"], ["M", "N"]],
+  "318ab874": [["D", "J"], ["D", "N"], ["D", "O"], ["E", "H"], ["E", "J"], ["E", "O"], ["H", "N"], ["H", "O"], ["J", "N"]],
+  "34f7b3c0": [["A", "D"], ["A", "F"], ["A", "O"], ["B", "D"], ["B", "H"], ["B", "O"], ["D", "H"], ["F", "H"], ["F", "O"]],
+  "367257af": [["D", "K"], ["D", "M"], ["D", "N"], ["I", "M"], ["I", "N"], ["I", "O"], ["K", "M"], ["K", "O"], ["N", "O"]],
+  "3828df63": [["A", "B"], ["A", "F"], ["A", "N"], ["B", "I"], ["B", "N"], ["C", "F"], ["C", "I"], ["C", "N"], ["F", "I"]],
+  "3e328280": [["E", "G"], ["E", "M"], ["E", "N"], ["G", "N"], ["G", "P"], ["J", "M"], ["J", "N"], ["J", "P"], ["M", "P"]],
+  "45676023": [["A", "I"], ["A", "K"], ["A", "L"], ["I", "J"], ["I", "K"], ["J", "L"], ["J", "O"], ["K", "O"], ["L", "O"]],
+  "46356a75": [["A", "I"], ["A", "K"], ["A", "L"], ["I", "J"], ["I", "K"], ["J", "L"], ["J", "O"], ["K", "O"], ["L", "O"]],
+  "48618aac": [["B", "C"], ["B", "G"], ["B", "N"], ["C", "E"], ["C", "N"], ["E", "G"], ["E", "K"], ["G", "K"], ["K", "N"]],
+  "4a6c73b2": [["B", "J"], ["B", "K"], ["B", "L"], ["G", "H"], ["G", "J"], ["G", "L"], ["H", "J"], ["H", "K"], ["K", "L"]],
+  "4f28bb81": [["D", "K"], ["D", "M"], ["D", "N"], ["I", "M"], ["I", "N"], ["I", "O"], ["K", "M"], ["K", "O"], ["N", "O"]],
+  "54c837d8": [["B", "D"], ["B", "F"], ["B", "M"], ["D", "L"], ["D", "P"], ["F", "M"], ["F", "P"], ["L", "M"], ["L", "P"]],
+  "58fba479": [["A", "J"], ["A", "M"], ["A", "P"], ["D", "K"], ["D", "M"], ["D", "P"], ["J", "K"], ["J", "M"], ["K", "P"]],
+  "617380cd": [["B", "C"], ["B", "G"], ["B", "N"], ["C", "E"], ["C", "N"], ["E", "G"], ["E", "K"], ["G", "K"], ["K", "N"]],
+  "62477b77": [["A", "G"], ["A", "H"], ["A", "O"], ["C", "H"], ["C", "O"], ["C", "P"], ["G", "O"], ["G", "P"], ["H", "P"]],
+  "6339a278": [["A", "J"], ["A", "M"], ["A", "P"], ["D", "K"], ["D", "M"], ["D", "P"], ["J", "K"], ["J", "M"], ["K", "P"]],
+  "69c0c99f": [["B", "C"], ["B", "G"], ["B", "N"], ["C", "E"], ["C", "N"], ["E", "G"], ["E", "K"], ["G", "K"], ["K", "N"]],
+  "6da06c4a": [["D", "J"], ["D", "N"], ["D", "O"], ["E", "H"], ["E", "J"], ["E", "O"], ["H", "N"], ["H", "O"], ["J", "N"]],
+  "82c5a844": [["B", "G"], ["B", "L"], ["B", "P"], ["G", "L"], ["G", "O"], ["I", "L"], ["I", "O"], ["I", "P"], ["O", "P"]],
+  "8c9cce63": [["C", "G"], ["C", "J"], ["C", "K"], ["D", "F"], ["D", "G"], ["D", "J"], ["F", "G"], ["F", "K"], ["J", "K"]],
+  "8ec1c2fb": [["A", "B"], ["A", "F"], ["A", "N"], ["B", "I"], ["B", "N"], ["C", "F"], ["C", "I"], ["C", "N"], ["F", "I"]],
+  "913cbfe9": [["A", "G"], ["A", "H"], ["A", "O"], ["C", "H"], ["C", "O"], ["C", "P"], ["G", "O"], ["G", "P"], ["H", "P"]],
+  "959869e4": [["C", "D"], ["C", "J"], ["C", "L"], ["D", "E"], ["D", "I"], ["E", "I"], ["E", "L"], ["I", "J"], ["J", "L"]],
+  "9b5c3b37": [["A", "H"], ["A", "L"], ["A", "M"], ["B", "H"], ["B", "K"], ["B", "M"], ["H", "L"], ["K", "L"], ["K", "M"]],
+  "a29ef2d4": [["B", "J"], ["B", "K"], ["B", "L"], ["G", "H"], ["G", "J"], ["G", "L"], ["H", "J"], ["H", "K"], ["K", "L"]],
+  "a3d8192f": [["F", "L"], ["F", "N"], ["F", "O"], ["L", "M"], ["L", "P"], ["M", "N"], ["M", "O"], ["N", "P"], ["O", "P"]],
+  "a7e4b0c1": [["C", "G"], ["C", "I"], ["C", "M"], ["G", "I"], ["G", "N"], ["H", "I"], ["H", "M"], ["H", "N"], ["M", "N"]],
+  "af9f6732": [["A", "C"], ["A", "E"], ["A", "G"], ["C", "E"], ["C", "F"], ["E", "M"], ["F", "G"], ["F", "M"], ["G", "M"]],
+  "b1711d5c": [["A", "B"], ["A", "D"], ["A", "P"], ["B", "C"], ["B", "E"], ["C", "D"], ["C", "P"], ["D", "E"], ["E", "P"]],
+  "b25ac2b8": [["C", "D"], ["C", "J"], ["C", "L"], ["D", "E"], ["D", "I"], ["E", "I"], ["E", "L"], ["I", "J"], ["J", "L"]],
+  "b5c1d87f": [["B", "G"], ["B", "L"], ["B", "P"], ["G", "L"], ["G", "O"], ["I", "L"], ["I", "O"], ["I", "P"], ["O", "P"]],
+  "b6fe7f8a": [["A", "J"], ["A", "M"], ["A", "P"], ["D", "K"], ["D", "M"], ["D", "P"], ["J", "K"], ["J", "M"], ["K", "P"]],
+  "bc3f59d7": [["C", "G"], ["C", "J"], ["C", "K"], ["D", "F"], ["D", "G"], ["D", "J"], ["F", "G"], ["F", "K"], ["J", "K"]],
+  "c41ae076": [["A", "H"], ["A", "L"], ["A", "M"], ["B", "H"], ["B", "K"], ["B", "M"], ["H", "L"], ["K", "L"], ["K", "M"]],
+  "c61c37aa": [["E", "G"], ["E", "M"], ["E", "N"], ["G", "N"], ["G", "P"], ["J", "M"], ["J", "N"], ["J", "P"], ["M", "P"]],
+  "c6b3890a": [["E", "F"], ["E", "J"], ["E", "N"], ["F", "J"], ["F", "L"], ["J", "O"], ["L", "N"], ["L", "O"], ["N", "O"]],
+  "ccfabc8a": [["C", "G"], ["C", "I"], ["C", "M"], ["G", "I"], ["G", "N"], ["H", "I"], ["H", "M"], ["H", "N"], ["M", "N"]],
+  "cee50d28": [["C", "D"], ["C", "J"], ["C", "L"], ["D", "E"], ["D", "I"], ["E", "I"], ["E", "L"], ["I", "J"], ["J", "L"]],
+  "cf56b4ba": [["D", "J"], ["D", "N"], ["D", "O"], ["E", "H"], ["E", "J"], ["E", "O"], ["H", "N"], ["H", "O"], ["J", "N"]],
+  "d028b359": [["A", "C"], ["A", "E"], ["A", "G"], ["C", "E"], ["C", "F"], ["E", "M"], ["F", "G"], ["F", "M"], ["G", "M"]],
+  "d7c5eb32": [["B", "G"], ["B", "L"], ["B", "P"], ["G", "L"], ["G", "O"], ["I", "L"], ["I", "O"], ["I", "P"], ["O", "P"]],
+  "dafe4d8e": [["A", "B"], ["A", "D"], ["A", "P"], ["B", "C"], ["B", "E"], ["C", "D"], ["C", "P"], ["D", "E"], ["E", "P"]],
+  "ddb8b8f6": [["A", "D"], ["A", "F"], ["A", "O"], ["B", "D"], ["B", "H"], ["B", "O"], ["D", "H"], ["F", "H"], ["F", "O"]],
+  "e3874dbf": [["D", "K"], ["D", "M"], ["D", "N"], ["I", "M"], ["I", "N"], ["I", "O"], ["K", "M"], ["K", "O"], ["N", "O"]],
+  "eb2f489c": [["A", "G"], ["A", "H"], ["A", "O"], ["C", "H"], ["C", "O"], ["C", "P"], ["G", "O"], ["G", "P"], ["H", "P"]],
+  "ee66a253": [["A", "B"], ["A", "F"], ["A", "N"], ["B", "I"], ["B", "N"], ["C", "F"], ["C", "I"], ["C", "N"], ["F", "I"]],
+  "f4e2cbd7": [["F", "L"], ["F", "N"], ["F", "O"], ["L", "M"], ["L", "P"], ["M", "N"], ["M", "O"], ["N", "P"], ["O", "P"]],
+};
+
+// Se o nome digitado não for reconhecido, o aluno escolhe a combinação dos
+// roteiros que assinou (um por tarefa) e recebe a designação correspondente.
+const POR_GRUPO = {
+  "I: A Última Volta da Catraca · III: Acidente a Caminho do Amor · IV: O Desejo da Camisa 9": [[["B", "D"], ["B", "F"], ["B", "M"], ["D", "L"], ["D", "P"], ["F", "M"], ["F", "P"], ["L", "M"], ["L", "P"]]],
+  "I: A Última Volta da Catraca · III: Morte Certa nas Montanhas · IV: Quem Quer Ficar com Queren?": [[["A", "B"], ["A", "F"], ["A", "N"], ["B", "I"], ["B", "N"], ["C", "F"], ["C", "I"], ["C", "N"], ["F", "I"]]],
+  "I: A Última Volta da Catraca · III: Pés e calcanhares · IV: O Primeiro e Último Xìngyùn Bǐng de Teobaldo Baltazar": [[["A", "J"], ["A", "M"], ["A", "P"], ["D", "K"], ["D", "M"], ["D", "P"], ["J", "K"], ["J", "M"], ["K", "P"]]],
+  "I: Colecionador de Lendas · III: Acidente a Caminho do Amor · IV: Quem Quer Ficar com Queren?": [[["D", "K"], ["D", "M"], ["D", "N"], ["I", "M"], ["I", "N"], ["I", "O"], ["K", "M"], ["K", "O"], ["N", "O"]]],
+  "I: Colecionador de Lendas · III: Morte Certa nas Montanhas · IV: O Primeiro e Último Xìngyùn Bǐng de Teobaldo Baltazar": [[["A", "D"], ["A", "F"], ["A", "O"], ["B", "D"], ["B", "H"], ["B", "O"], ["D", "H"], ["F", "H"], ["F", "O"]]],
+  "I: Colecionador de Lendas · III: Pés e calcanhares · IV: Até que a Homossexualidade nos Separe": [[["A", "I"], ["A", "K"], ["A", "L"], ["I", "J"], ["I", "K"], ["J", "L"], ["J", "O"], ["K", "O"], ["L", "O"]]],
+  "I: Colecionador de Lendas · III: Quem Vai Pagar o Pato? · IV: Dose Dupla": [[["A", "C"], ["A", "E"], ["A", "G"], ["C", "E"], ["C", "F"], ["E", "M"], ["F", "G"], ["F", "M"], ["G", "M"]]],
+  "I: Incriminação do Amor · III: Acidente a Caminho do Amor · IV: O Primeiro e Último Xìngyùn Bǐng de Teobaldo Baltazar": [[["E", "G"], ["E", "M"], ["E", "N"], ["G", "N"], ["G", "P"], ["J", "M"], ["J", "N"], ["J", "P"], ["M", "P"]]],
+  "I: Incriminação do Amor · III: Pés e calcanhares · IV: O Desejo da Camisa 9": [[["D", "J"], ["D", "N"], ["D", "O"], ["E", "H"], ["E", "J"], ["E", "O"], ["H", "N"], ["H", "O"], ["J", "N"]]],
+  "I: Incriminação do Amor · III: Quem Vai Pagar o Pato? · IV: Até que a Homossexualidade nos Separe": [[["A", "H"], ["A", "L"], ["A", "M"], ["B", "H"], ["B", "K"], ["B", "M"], ["H", "L"], ["K", "L"], ["K", "M"]]],
+  "I: Incriminação do Amor · III: YOU & MEAT · IV: Dose Dupla": [[["B", "J"], ["B", "K"], ["B", "L"], ["G", "H"], ["G", "J"], ["G", "L"], ["H", "J"], ["H", "K"], ["K", "L"]]],
+  "I: Lucas com S de Suicida · III: Morte Certa nas Montanhas · IV: O Desejo da Camisa 9": [[["B", "C"], ["B", "G"], ["B", "N"], ["C", "E"], ["C", "N"], ["E", "G"], ["E", "K"], ["G", "K"], ["K", "N"]]],
+  "I: Lucas com S de Suicida · III: Pés e calcanhares · IV: Dose Dupla": [[["E", "F"], ["E", "J"], ["E", "N"], ["F", "J"], ["F", "L"], ["J", "O"], ["L", "N"], ["L", "O"], ["N", "O"]]],
+  "I: Lucas com S de Suicida · III: Quem Vai Pagar o Pato? · IV: Quem Quer Ficar com Queren?": [[["A", "B"], ["A", "D"], ["A", "P"], ["B", "C"], ["B", "E"], ["C", "D"], ["C", "P"], ["D", "E"], ["E", "P"]]],
+  "I: Lucas com S de Suicida · III: YOU & MEAT · IV: Até que a Homossexualidade nos Separe": [[["C", "G"], ["C", "J"], ["C", "K"], ["D", "F"], ["D", "G"], ["D", "J"], ["F", "G"], ["F", "K"], ["J", "K"]]],
+  "I: O último brinde · III: Quem Vai Pagar o Pato? · IV: O Desejo da Camisa 9": [[["C", "G"], ["C", "I"], ["C", "M"], ["G", "I"], ["G", "N"], ["H", "I"], ["H", "M"], ["H", "N"], ["M", "N"]]],
+  "I: O último brinde · III: YOU & MEAT · IV: Quem Quer Ficar com Queren?": [[["C", "D"], ["C", "J"], ["C", "L"], ["D", "E"], ["D", "I"], ["E", "I"], ["E", "L"], ["I", "J"], ["J", "L"]]],
+  "I: Uma mulher gigante pode se apaixonar pelo CEO? · III: Acidente a Caminho do Amor · IV: Até que a Homossexualidade nos Separe": [[["B", "G"], ["B", "L"], ["B", "P"], ["G", "L"], ["G", "O"], ["I", "L"], ["I", "O"], ["I", "P"], ["O", "P"]]],
+  "I: Uma mulher gigante pode se apaixonar pelo CEO? · III: Morte Certa nas Montanhas · IV: Dose Dupla": [[["F", "L"], ["F", "N"], ["F", "O"], ["L", "M"], ["L", "P"], ["M", "N"], ["M", "O"], ["N", "P"], ["O", "P"]]],
+  "I: Uma mulher gigante pode se apaixonar pelo CEO? · III: YOU & MEAT · IV: O Primeiro e Último Xìngyùn Bǐng de Teobaldo Baltazar": [[["A", "G"], ["A", "H"], ["A", "O"], ["C", "H"], ["C", "O"], ["C", "P"], ["G", "O"], ["G", "P"], ["H", "P"]]],
+};
+document.getElementById("grupo").innerHTML = '<option value="">— escolha —</option>' +
+  Object.keys(POR_GRUPO).map(function (g) { return "<option>" + g + "</option>"; }).join("");
+
+const TRABALHOS = [
+  { id: "A", titulo: "Roteiro A", url: "https://drive.google.com/file/d/14cjEOtLR0o6xKW87HhGYXtGnGsFgsCmb/view" },
+  { id: "B", titulo: "Roteiro B", url: "https://drive.google.com/file/d/1z2YVzSKuLFRete_bKzdgyLDUCjLCk8XZ/view" },
+  { id: "C", titulo: "Roteiro C", url: "https://drive.google.com/file/d/1dQMWO3qQXWyy6oMdcMBDsItYmk8ObHUU/view" },
+  { id: "D", titulo: "Roteiro D", url: "https://drive.google.com/file/d/1dr6gi-lE_thyokfYP6fMWAAeFeoNtuCd/view" },
+  { id: "E", titulo: "Roteiro E", url: "https://drive.google.com/file/d/1U8ixPy2jc_Epq-O32xy3pfB-lP031G7_/view" },
+  { id: "F", titulo: "Roteiro F", url: "https://drive.google.com/file/d/1W0K1uLcnGCSndfpzefCB9fbmoQzBRVXJ/view" },
+  { id: "G", titulo: "Roteiro G", url: "https://drive.google.com/file/d/1QnaNLFjsraPyZX0iQ6E6RrHEMAY3F-cA/view" },
+  { id: "H", titulo: "Roteiro H", url: "https://drive.google.com/file/d/1OO0pZ1tp_SlYyrA-o3LQUMNvq60uQfoi/view" },
+  { id: "I", titulo: "Roteiro I", url: "https://drive.google.com/file/d/1DuAIiukYr1Qc8NzADNYoHShSxbbCurj5/view" },
+  { id: "J", titulo: "Roteiro J", url: "https://drive.google.com/file/d/1sini6zg_8lcWadenpH4KQY3cnvWqC__C/view" },
+  { id: "K", titulo: "Roteiro K", url: "https://drive.google.com/file/d/1aRy0ggThs2-zEIzOLvBFVGoy_jAW0Fs4/view" },
+  { id: "L", titulo: "Roteiro L", url: "https://drive.google.com/file/d/1ZizTZDa5quNtvV3Gr6rUeCkOoshJYSR_/view" },
+  { id: "M", titulo: "Roteiro M", url: "https://drive.google.com/file/d/15cswCEOAFlh2rCbl8Dq0_G5KQXY0271Y/view" },
+  { id: "N", titulo: "Roteiro N", url: "https://drive.google.com/file/d/1Xq4-xBcUQ_p449nTIVXO0UBgoFTaimOl/view" },
+  { id: "O", titulo: "Roteiro O", url: "https://drive.google.com/file/d/1F5Jwy2SdIzewuc02QlwK7Ok68mcjjiZE/view" },
+  { id: "P", titulo: "Roteiro P", url: "https://drive.google.com/file/d/1j-CbRCsP9S9F6gffAUUk0RkODa0UgHne/view" },
+];
+
+/* ================================================================
+   Motor — normalmente não precisa mexer daqui para baixo
+================================================================= */
+(function () {
+  "use strict";
+  const $ = function (id) { return document.getElementById(id); };
+  const KEY = "comparacao-roteiros-" + TAREFA.replace(/\W+/g, "_");
+  const byId = {}; TRABALHOS.forEach(function (t) { byId[t.id] = t; });
+
+  $("titulo").textContent = TITULO;
+  $("tarefaNome").textContent = TAREFA;
+  $("instrucao").textContent = INSTRUCAO;
+  $("criterio").innerHTML = CRITERIO;
+
+  // Monta as duplas do conjunto designado ao aluno (designação fixa, ver CONJUNTOS).
+  // Só a ordem das duplas e o lado de cada roteiro são embaralhados.
+  // Cada dupla guarda a escolha e um comentário por roteiro (ca = sobre 'a', cb = sobre 'b').
+  function embaralhar(v) {
+    for (let k = v.length - 1; k > 0; k--) {
+      const r = Math.floor(Math.random() * (k + 1));
+      const tmp = v[k]; v[k] = v[r]; v[r] = tmp;
+    }
+    return v;
+  }
+
+  function montarPares(designacao) {
+    const duplas = embaralhar(designacao.map(function (d) { return d.slice(); }));
+    return duplas.map(function (d) {
+      const lados = embaralhar(d.slice());
+      return { a: lados[0], b: lados[1], escolha: null, ca: "", cb: "" };
+    });
+  }
+
+  let pares = [], i = 0, nome = "", identificacao = "";
+
+  // Normaliza o nome (sem acento, sem caixa, espaços colapsados) e gera as
+  // grafias aceitas: nome inteiro, primeiro+último, primeiro+dois últimos.
+  function normalizar(s) {
+    return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase().replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function chavesDoNome(s) {
+    const p = normalizar(s).split(" ").filter(Boolean);
+    if (!p.length) return [];
+    const ks = [p.join(" ")];
+    if (p.length >= 2) ks.push(p[0] + " " + p[p.length - 1]);
+    if (p.length >= 3) ks.push(p[0] + " " + p[p.length - 2] + " " + p[p.length - 1]);
+    return ks;
+  }
+
+  function hash(s) {
+    let h = 5381;
+    const bytes = new TextEncoder().encode(s);
+    for (let k = 0; k < bytes.length; k++) h = (((h * 33) ^ bytes[k]) >>> 0);
+    return ("0000000" + h.toString(16)).slice(-8);
+  }
+
+  function designacaoPorNome(s) {
+    const ks = chavesDoNome(s);
+    for (let k = 0; k < ks.length; k++) {
+      const d = DESIGNACOES[hash(ks[k])];
+      if (d) return d;
+    }
+    return null;
+  }
+
+  function contar(card) {
+    const cc = card.querySelector(".cc");
+    const el = card.querySelector(".ccount");
+    el.textContent = cc.value.length + "/" + MAX_COMENTARIO;
+    el.classList.toggle("cheio", cc.value.length >= MAX_COMENTARIO);
+  }
+
+  function pintarCard(card, obra, escolhido, coment) {
+    card.classList.toggle("sel", escolhido);
+    card.querySelector(".t").textContent = obra.titulo;
+    const link = card.querySelector(".open");
+    if (obra.url) { link.href = obra.url; link.classList.remove("disabled"); link.textContent = "Abrir roteiro ↗"; }
+    else { link.removeAttribute("href"); link.classList.add("disabled"); link.textContent = "(link do PDF ainda não definido)"; }
+    const cc = card.querySelector(".cc");
+    cc.maxLength = MAX_COMENTARIO;
+    cc.value = (coment || "").slice(0, MAX_COMENTARIO);
+    contar(card);
+    const btn = card.querySelector(".pick");
+    btn.classList.toggle("sel", escolhido);
+    btn.textContent = escolhido ? "✓ Escolhido como melhor" : "Este é melhor";
+  }
+
+  function mostrar() {
+    const p = pares[i];
+    $("progresso").style.width = (i / pares.length * 100) + "%";
+    $("contador").textContent = "Dupla " + (i + 1) + " de " + pares.length;
+    pintarCard($("cardEsq"), byId[p.a], p.escolha === p.a, p.ca);
+    pintarCard($("cardDir"), byId[p.b], p.escolha === p.b, p.cb);
+    $("proximo").disabled = !p.escolha;
+    $("voltar").style.visibility = i === 0 ? "hidden" : "visible";
+    $("proximo").textContent = (i === pares.length - 1) ? "Concluir ✓" : "Próximo →";
+  }
+
+  function escolher(lado) {
+    const p = pares[i];
+    p.escolha = (lado === "esq") ? p.a : p.b;
+    salvar(); mostrar();
+  }
+
+  function salvar() {
+    try { localStorage.setItem(KEY, JSON.stringify({ nome: nome, identificacao: identificacao, pares: pares })); } catch (e) {}
+  }
+
+  function terminar() {
+    salvar();
+    $("jogo").classList.add("hidden");
+    $("fim").classList.remove("hidden");
+    $("nomeFim").textContent = nome || "aluno(a)";
+    let html = "<tr><th>Roteiro</th><th>Resultado</th></tr>";
+    pares.forEach(function (p) {
+      [[p.a, p.ca], [p.b, p.cb]].forEach(function (par) {
+        const id = par[0], venceu = (p.escolha === id);
+        html += "<tr><td>" + byId[id].titulo + "</td><td>" +
+          (venceu ? "escolhido" : "não escolhido") + "</td></tr>";
+      });
+    });
+    $("tabela").innerHTML = html;
+    enviar();
+  }
+
+  function montarPayload() {
+    const linhas = [];
+    pares.forEach(function (p, k) {
+      linhas.push({ dupla: k + 1, roteiro: p.a, venceu: (p.escolha === p.a ? "sim" : "nao"), adversario: p.b, comentario: p.ca });
+      linhas.push({ dupla: k + 1, roteiro: p.b, venceu: (p.escolha === p.b ? "sim" : "nao"), adversario: p.a, comentario: p.cb });
+    });
+    return { nome: nome, identificacao: identificacao, tarefa: TAREFA, linhas: linhas };
+  }
+
+  function enviar() {
+    const st = $("envioStatus");
+    if (!ENDPOINT) { st.textContent = "Baixe a cópia abaixo e envie ao professor."; return; }
+    st.textContent = "Enviando ao professor…";
+    try {
+      fetch(ENDPOINT, {
+        method: "POST", mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(montarPayload())
+      }).then(function () {
+        st.textContent = "✓ Respostas enviadas ao professor. (Guarde uma cópia abaixo, por segurança.)";
+      }).catch(function () {
+        st.textContent = "Não foi possível enviar sozinho — baixe a cópia abaixo e envie ao professor.";
+      });
+    } catch (e) {
+      st.textContent = "Não foi possível enviar sozinho — baixe a cópia abaixo e envie ao professor.";
+    }
+  }
+
+  function csvSeguro(s) {
+    s = String(s == null ? "" : s);
+    return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function baixar() {
+    const linhas = ["nome;identificacao;tarefa;dupla;roteiro;venceu;adversario;comentario"];
+    pares.forEach(function (p, k) {
+      linhas.push([nome, identificacao, TAREFA, k + 1, p.a, (p.escolha === p.a ? "sim" : "nao"), p.b, p.ca].map(csvSeguro).join(";"));
+      linhas.push([nome, identificacao, TAREFA, k + 1, p.b, (p.escolha === p.b ? "sim" : "nao"), p.a, p.cb].map(csvSeguro).join(";"));
+    });
+    const blob = new Blob(["﻿" + linhas.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const slug = (nome || "aluno").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    a.href = url; a.download = "comparacao-" + TAREFA.replace(/\W+/g, "_") + "-" + slug + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  $("comecar").addEventListener("click", function () {
+    nome = $("nome").value.trim();
+    const erro = $("erro");
+    if (!nome) { erro.textContent = "Escreva seu nome."; erro.classList.remove("hidden"); return; }
+
+    let designacao = designacaoPorNome(nome);
+    identificacao = "nome";
+
+    if (!designacao) {
+      // Nome fora da lista (ou escrito de outro jeito): pede o grupo.
+      const cx = $("caixaGrupo"), g = $("grupo").value.trim();
+      if (cx.classList.contains("hidden")) {
+        cx.classList.remove("hidden");
+        erro.textContent = "Não achei esse nome na lista da turma. Confira a grafia — ou escolha abaixo os roteiros que você assinou e siga.";
+        erro.classList.remove("hidden");
+        return;
+      }
+      if (!POR_GRUPO[g]) { erro.textContent = "Escolha na lista os roteiros que você assinou."; erro.classList.remove("hidden"); return; }
+      const opcoes = POR_GRUPO[g];
+      designacao = opcoes[Math.floor(Math.random() * opcoes.length)];
+      identificacao = "grupo " + g;
+    }
+
+    erro.classList.add("hidden");
+    pares = montarPares(designacao); i = 0;
+    $("intro").classList.add("hidden");
+    $("jogo").classList.remove("hidden");
+    mostrar();
+  });
+  $("cardEsq").querySelector(".pick").addEventListener("click", function () { escolher("esq"); });
+  $("cardDir").querySelector(".pick").addEventListener("click", function () { escolher("dir"); });
+  $("cardEsq").querySelector(".cc").addEventListener("input", function () { pares[i].ca = this.value; contar($("cardEsq")); salvar(); });
+  $("cardDir").querySelector(".cc").addEventListener("input", function () { pares[i].cb = this.value; contar($("cardDir")); salvar(); });
+  $("proximo").addEventListener("click", function () {
+    if (!pares[i].escolha) return;
+    if (i < pares.length - 1) { i++; mostrar(); } else { terminar(); }
+  });
+  $("voltar").addEventListener("click", function () { if (i > 0) { i--; mostrar(); } });
+  $("baixar").addEventListener("click", baixar);
+  $("refazer").addEventListener("click", function () {
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    location.reload();
+  });
+})();
+</script>
+</body>
+</html>

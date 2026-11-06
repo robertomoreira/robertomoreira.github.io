@@ -31,7 +31,7 @@ Segundo semestre de 2026 · quintas-feiras.
 | 22/10 | Discussão do Microdrama II (Renato Candido) | Microdrama III proposto: título de série, logline e primeiro episódio |
 | 29/10 | Sem aula (CILECT) | **Entrega do Microdrama III** — [depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
 | 05/11 | Discussão do Microdrama III (Ludmila Naves) | [Comparar os roteiros do Microdrama IV](/dramaturgia-iv/microdrama-4.html) e [complemento](/dramaturgia-iv/microdrama-4e.html) · Microdrama IV proposto: série com 3 episódios |
-| 12/11 | O personagem e o pitching (projeto "É Nóis na Fita", Eliana Fonseca) | **Entrega do Microdrama IV** — [depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
+| 12/11 | O personagem e o pitching (projeto "É Nóis na Fita", Eliana Fonseca) | **Entrega do Microdrama IV** — [depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) · [Ranking geral dos roteiros I, III e IV](/dramaturgia-iv/ranking-geral.html) (só escolha, sem comentário) |
 | 19/11 | Discussão dos Microdramas com 3 episódios I (Rodrigo Ferreira Thomé) | Microdrama V proposto: série com 3 episódios |
 | 26/11 | Situação dramática, emoção e autoria coletiva | **Entrega do Microdrama V** — [depositar](https://drive.google.com/drive/folders/1xBmt47FajgD_xzKOrJcPzcPKGXz5P3IY?usp=drive_link) |
 | 03/12 | Discussão dos Microdramas com 3 episódios II (Vitor Brandt e Denis Nielsen) | |
